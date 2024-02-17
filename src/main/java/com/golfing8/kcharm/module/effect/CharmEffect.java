@@ -1,6 +1,7 @@
 package com.golfing8.kcharm.module.effect;
 
 import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
 
 /**
  * Defines an effect that a charm has.
@@ -8,14 +9,20 @@ import org.bukkit.entity.Player;
  * One charm can have multiple effects 'compounded' together.
  * </p>
  */
-public abstract class CharmEffect {
-    public abstract void onStartHolding(Player player);
+public abstract class CharmEffect implements Listener {
+    /**
+     * Called when a player has begun holding this charm's effect.
+     *
+     * @param player the player.
+     */
+    public void onStartHolding(Player player) {}
 
     /**
+     * Called every tick WHILE a player is holding the charm.
      *
-     * @param player
+     * @param player the player.
      */
-    public abstract void onHolding(Player player);
+    public void onHolding(Player player) {}
 
     /**
      * Called when a player has stopped holding a charm that has this effect.
@@ -25,5 +32,16 @@ public abstract class CharmEffect {
      *
      * @param player the player.
      */
-    public abstract void onStopHolding(Player player);
+    public void onStopHolding(Player player) {}
+
+    /**
+     * Checks if the given player is holding a charm with this effect.
+     *
+     * @param player the player.
+     * @return if they're holding this charm.
+     */
+    protected boolean isHoldingCharm(Player player) {
+        //TODO
+        return false;
+    }
 }
