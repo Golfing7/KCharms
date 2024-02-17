@@ -2,11 +2,14 @@ package com.golfing8.kcharm.module;
 
 import com.golfing8.kcharm.module.cmd.CharmCommand;
 import com.golfing8.kcharm.module.effect.CharmEffect;
-import com.golfing8.kcharm.module.effect.CharmType;
+import com.golfing8.kcharm.module.effect.CharmEffectType;
 import com.golfing8.kcharm.module.struct.Charm;
+import com.golfing8.kcommon.config.generator.Conf;
 import com.golfing8.kcommon.module.Module;
 import com.golfing8.kcommon.module.ModuleInfo;
+import de.tr7zw.kcommon.nbtapi.NBTCompound;
 import de.tr7zw.kcommon.nbtapi.NBTItem;
+import de.tr7zw.kcommon.nbtapi.NBTType;
 import lombok.Getter;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -14,7 +17,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -31,6 +36,9 @@ import java.util.*;
 public class CharmModule extends Module {
     public static final String CHARM_ITEM_KEY = "kcharm-type";
 
+    @Getter
+    @Conf("Allow main hand charms")
+    private boolean allowMainHandCharms = false;
     /** All loaded charms */
     @Getter
     private Map<String, Charm> charms;
@@ -49,7 +57,7 @@ public class CharmModule extends Module {
         this.charmEffects = new HashMap<>();
         ConfigurationSection effectSection = getMainConfig().getConfigurationSection("charm-effects");
         for (String charmEffect : effectSection.getKeys(false)) {
-            CharmEffect effect = CharmType.fromConfig(effectSection.getConfigurationSection(charmEffect));
+            CharmEffect effect = CharmEffectType.fromConfig(effectSection.getConfigurationSection(charmEffect));
             addSubListener(effect);
             this.charmEffects.put(charmEffect, effect);
         }
@@ -97,12 +105,12 @@ public class CharmModule extends Module {
             return Collections.emptyList();
 
         NBTItem nbtItem = new NBTItem(stack);
-        if (!nbtItem.hasTag(CHARM_ITEM_KEY))
+        if (!nbtItem.hasTag(CHARM_ITEM_KEY, NBTType.NBTTagCompound))
             return Collections.emptyList();
 
-        List<String> charmIDs = nbtItem.getStringList(CHARM_ITEM_KEY);
+        NBTCompound compound = nbtItem.getCompound(CHARM_ITEM_KEY);
         List<Charm> charms = new ArrayList<>();
-        for (String str : charmIDs) {
+        for (String str : compound.getKeys()) {
             if (!this.charms.containsKey(str)) // Filter dead IDs
                 continue;
 
@@ -121,14 +129,23 @@ public class CharmModule extends Module {
      * @return the itemstack.
      */
     public ItemStack[] getCharmItems(Player player) {
-        return new ItemStack[] {
-                player.getInventory().getItemInMainHand(),
-                player.getInventory().getItemInOffHand()
-        };
+        if (allowMainHandCharms) {
+            return new ItemStack[] {
+                    player.getInventory().getItemInMainHand(),
+                    player.getInventory().getItemInOffHand()
+            };
+        } else {
+            return new ItemStack[] {
+                    player.getInventory().getItemInOffHand()
+            };
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onItemHeld(PlayerSwapHandItemsEvent event) {
+        if (allowMainHandCharms)
+            return;
+
         ItemStack mainHandItem = event.getMainHandItem();
         for (Charm charm : getCharms(mainHandItem)) {
             for (CharmEffect effect : charm.charmEffects()) {
@@ -144,23 +161,80 @@ public class CharmModule extends Module {
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onHeld(PlayerItemHeldEvent event) {
+        if (!allowMainHandCharms)
+            return;
+
+        ItemStack oldItem = event.getPlayer().getInventory().getItem(event.getPreviousSlot());
+        for (Charm charm : getCharms(oldItem)) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.onStopHolding(event.getPlayer());
+            }
+        }
+
+        ItemStack newItem = event.getPlayer().getInventory().getItem(event.getNewSlot());
+        for (Charm charm : getCharms(newItem)) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.onStartHolding(event.getPlayer());
+            }
+        }
+    }
+
+    // Off-hand click listener
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onInventoryClick(InventoryClickEvent event) {
+    public void onOffhandClick(InventoryClickEvent event) {
         if (event.getClickedInventory() == null || event.getSlot() != 40 || !(event.getWhoClicked() instanceof Player player))
             return;
 
         if (event.getClickedInventory().getType() != InventoryType.PLAYER)
             return;
 
-        ItemStack cursor = event.getCursor();
-        for (Charm charm : getCharms(cursor)) {
+        ItemStack current = event.getCurrentItem();
+        for (Charm charm : getCharms(current)) {
             for (CharmEffect effect : charm.charmEffects()) {
                 effect.onStopHolding(player);
             }
         }
 
-        ItemStack current = event.getCurrentItem();
-        for (Charm charm : getCharms(current)) {
+        ItemStack cursor = event.getCursor();
+        for (Charm charm : getCharms(cursor)) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.onStartHolding(player);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onMainHandClick(InventoryClickEvent event) {
+        if (!allowMainHandCharms || !(event.getWhoClicked() instanceof Player player))
+            return;
+
+        if (event.getSlot() == event.getWhoClicked().getInventory().getHeldItemSlot()) {
+            List<Charm> currentCharms = getCharms(event.getCurrentItem());
+            for (Charm charm : currentCharms) {
+                for (CharmEffect effect : charm.charmEffects()) {
+                    effect.onStopHolding(player);
+                }
+            }
+
+            List<Charm> cursorCharms = getCharms(event.getCursor());
+            for (Charm charm : cursorCharms) {
+                for (CharmEffect effect : charm.charmEffects()) {
+                    effect.onStartHolding(player);
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onMainHandDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player) ||
+                !event.getInventorySlots().contains(event.getWhoClicked().getInventory().getHeldItemSlot()))
+            return;
+
+        List<Charm> cursorCharms = getCharms(event.getOldCursor());
+        for (Charm charm : cursorCharms) {
             for (CharmEffect effect : charm.charmEffects()) {
                 effect.onStartHolding(player);
             }

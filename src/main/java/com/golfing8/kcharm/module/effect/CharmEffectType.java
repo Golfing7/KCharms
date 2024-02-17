@@ -1,10 +1,8 @@
 package com.golfing8.kcharm.module.effect;
 
-import com.golfing8.kcharm.module.CharmModule;
 import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.function.Function;
@@ -13,7 +11,7 @@ import java.util.function.Function;
  * Contains all types of charms.
  */
 @AllArgsConstructor
-public enum CharmType {
+public enum CharmEffectType {
     POTION(CharmPotionEffect::fromConfig),
     POTION_IMMUNITY(CharmPotionEffectImmunity::fromConfig),
     ;
@@ -31,9 +29,9 @@ public enum CharmType {
     public static CharmEffect fromConfig(ConfigurationSection section) {
         Preconditions.checkArgument(section.isString("type"));
 
-        CharmType type;
+        CharmEffectType type;
         try {
-            type = CharmType.valueOf(section.getString("type"));
+            type = CharmEffectType.valueOf(section.getString("type"));
         } catch (IllegalArgumentException exc) {
             throw new IllegalArgumentException("Cannot load charm effect because '%s' type doesn't exist!".formatted(section.getString("type")));
         }

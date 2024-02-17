@@ -1,0 +1,23 @@
+charm-effects:
+  speed-low:
+    type: POTION
+    potion-effects:
+      - 'SPEED:0'
+  speed-high:
+    type: POTION
+    potion-effects:
+      - 'SPEED:1'
+
+charms:
+  speed-1:
+    effects:
+      - 'speed-low'
+    item:
+      type: PAPER
+      name: '&aSpeed Charm I'
+  speed-2:
+    effects:
+      - 'speed-high'
+    item:
+      type: PAPER
+      name: '&aSpeed Charm II'

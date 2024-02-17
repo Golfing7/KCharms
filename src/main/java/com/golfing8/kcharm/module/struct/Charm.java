@@ -4,13 +4,16 @@ import com.golfing8.kcharm.module.CharmModule;
 import com.golfing8.kcharm.module.effect.CharmEffect;
 import com.golfing8.kcommon.struct.item.ItemStackBuilder;
 import com.google.common.base.Preconditions;
+import de.tr7zw.kcommon.nbtapi.NBTCompound;
 import de.tr7zw.kcommon.nbtapi.NBTItem;
+import de.tr7zw.kcommon.nbtapi.NBTType;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Contains structural data about a given charm.
@@ -19,6 +22,31 @@ import java.util.List;
  * @param charmEffects The effects the player will receive when holding this charm.
  */
 public record Charm(String id, List<CharmEffect> charmEffects, ItemStackBuilder charmItemFormat) {
+    /**
+     * Builds the charm item from the format.
+     *
+     * @return the built item.
+     */
+    public ItemStack buildItem() {
+        ItemStack built = this.charmItemFormat.buildCached();
+        NBTItem nbtItem = new NBTItem(built);
+        NBTCompound compound = nbtItem.addCompound(CharmModule.CHARM_ITEM_KEY);
+        compound.setBoolean(this.id, true);
+        return nbtItem.getItem();
+    }
+
+    /**
+     * Gets the display name of this charm.
+     *
+     * @return the display name.
+     */
+    public String getDisplayName() {
+        if (charmItemFormat.getItemName() != null)
+            return charmItemFormat.getItemName();
+
+        return id;
+    }
+
     /**
      * Checks if the player is holding the charm.
      *
@@ -33,10 +61,11 @@ public record Charm(String id, List<CharmEffect> charmEffects, ItemStackBuilder 
                 continue;
 
             NBTItem nbtItem = new NBTItem(stack);
-            if (!nbtItem.hasTag(CharmModule.CHARM_ITEM_KEY))
+            if (!nbtItem.hasTag(CharmModule.CHARM_ITEM_KEY, NBTType.NBTTagCompound))
                 continue;
 
-            return nbtItem.getStringList(CharmModule.CHARM_ITEM_KEY).contains(id);
+            NBTCompound compound = nbtItem.getCompound(CharmModule.CHARM_ITEM_KEY);
+            return compound.hasTag(id);
         }
         return false;
     }
@@ -48,13 +77,12 @@ public record Charm(String id, List<CharmEffect> charmEffects, ItemStackBuilder 
      * @return the section.
      */
     public static Charm fromConfig(ConfigurationSection section) {
-        Preconditions.checkArgument(section.isConfigurationSection("effects"), "Charm %s must contain effects".formatted(section.getName()));
+        Preconditions.checkArgument(section.isList("effects"), "Charm %s must contain effects".formatted(section.getName()));
         Preconditions.checkArgument(section.isConfigurationSection("item"), "Charm %s must contain an item".formatted(section.getName()));
 
         CharmModule module = CharmModule.get();
         List<CharmEffect> effects = new ArrayList<>();
-        ConfigurationSection effectSection = section.getConfigurationSection("effects");
-        for (String effectKey : effectSection.getKeys(false)) {
+        for (String effectKey : section.getStringList("effects")) {
             CharmEffect charmEffect = module.getCharmEffects().get(effectKey);
             if (charmEffect == null) {
                 module.getPlugin().getLogger().warning("Effect with key %s doesn't exist!".formatted(effectKey));
