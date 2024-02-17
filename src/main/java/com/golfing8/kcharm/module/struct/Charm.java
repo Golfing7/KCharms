@@ -19,8 +19,6 @@ import java.util.List;
  * @param charmEffects The effects the player will receive when holding this charm.
  */
 public record Charm(String id, List<CharmEffect> charmEffects, ItemStackBuilder charmItemFormat) {
-    private static final String CHARM_ITEM_KEY = "kcharm-type";
-
     /**
      * Checks if the player is holding the charm.
      *
@@ -29,16 +27,16 @@ public record Charm(String id, List<CharmEffect> charmEffects, ItemStackBuilder 
      */
     public boolean isHoldingCharm(Player player) {
         CharmModule module = CharmModule.get();
-        ItemStack[] itemStacks = module.getPotentialCharmSlots(player);
+        ItemStack[] itemStacks = module.getCharmItems(player);
         for (ItemStack stack : itemStacks) {
             if (stack == null || stack.getType() != charmItemFormat.getItemType().parseMaterial() || !stack.hasItemMeta())
                 continue;
 
             NBTItem nbtItem = new NBTItem(stack);
-            if (!nbtItem.hasTag(CHARM_ITEM_KEY))
+            if (!nbtItem.hasTag(CharmModule.CHARM_ITEM_KEY))
                 continue;
 
-            return nbtItem.getStringList(CHARM_ITEM_KEY).contains(id);
+            return nbtItem.getStringList(CharmModule.CHARM_ITEM_KEY).contains(id);
         }
         return false;
     }
@@ -53,10 +51,17 @@ public record Charm(String id, List<CharmEffect> charmEffects, ItemStackBuilder 
         Preconditions.checkArgument(section.isConfigurationSection("effects"), "Charm %s must contain effects".formatted(section.getName()));
         Preconditions.checkArgument(section.isConfigurationSection("item"), "Charm %s must contain an item".formatted(section.getName()));
 
+        CharmModule module = CharmModule.get();
         List<CharmEffect> effects = new ArrayList<>();
         ConfigurationSection effectSection = section.getConfigurationSection("effects");
         for (String effectKey : effectSection.getKeys(false)) {
-            //TODO
+            CharmEffect charmEffect = module.getCharmEffects().get(effectKey);
+            if (charmEffect == null) {
+                module.getPlugin().getLogger().warning("Effect with key %s doesn't exist!".formatted(effectKey));
+                continue;
+            }
+
+            effects.add(charmEffect);
         }
 
         ItemStackBuilder builder = new ItemStackBuilder(section.getConfigurationSection("item"));
