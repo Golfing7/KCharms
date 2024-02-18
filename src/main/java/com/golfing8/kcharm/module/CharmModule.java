@@ -8,6 +8,7 @@ import com.golfing8.kcharm.module.struct.Charm;
 import com.golfing8.kcommon.config.generator.Conf;
 import com.golfing8.kcommon.module.Module;
 import com.golfing8.kcommon.module.ModuleInfo;
+import com.golfing8.kcommon.module.ModuleTask;
 import de.tr7zw.kcommon.nbtapi.NBTCompound;
 import de.tr7zw.kcommon.nbtapi.NBTItem;
 import de.tr7zw.kcommon.nbtapi.NBTType;
@@ -24,6 +25,8 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -153,14 +156,14 @@ public class CharmModule extends Module {
         ItemStack mainHandItem = event.getMainHandItem();
         for (Charm charm : getCharms(mainHandItem)) {
             for (CharmEffect effect : charm.charmEffects()) {
-                effect.onStopHolding(event.getPlayer());
+                effect.stopPlayerHold(event.getPlayer());
             }
         }
 
         ItemStack offHandItem = event.getOffHandItem();
         for (Charm charm : getCharms(offHandItem)) {
             for (CharmEffect effect : charm.charmEffects()) {
-                effect.onStartHolding(event.getPlayer());
+                effect.markPlayerHeld(event.getPlayer());
             }
         }
     }
@@ -173,14 +176,14 @@ public class CharmModule extends Module {
         ItemStack oldItem = event.getPlayer().getInventory().getItem(event.getPreviousSlot());
         for (Charm charm : getCharms(oldItem)) {
             for (CharmEffect effect : charm.charmEffects()) {
-                effect.onStopHolding(event.getPlayer());
+                effect.stopPlayerHold(event.getPlayer());
             }
         }
 
         ItemStack newItem = event.getPlayer().getInventory().getItem(event.getNewSlot());
         for (Charm charm : getCharms(newItem)) {
             for (CharmEffect effect : charm.charmEffects()) {
-                effect.onStartHolding(event.getPlayer());
+                effect.markPlayerHeld(event.getPlayer());
             }
         }
     }
@@ -197,14 +200,14 @@ public class CharmModule extends Module {
         ItemStack current = event.getCurrentItem();
         for (Charm charm : getCharms(current)) {
             for (CharmEffect effect : charm.charmEffects()) {
-                effect.onStopHolding(player);
+                effect.stopPlayerHold(player);
             }
         }
 
         ItemStack cursor = event.getCursor();
         for (Charm charm : getCharms(cursor)) {
             for (CharmEffect effect : charm.charmEffects()) {
-                effect.onStartHolding(player);
+                effect.markPlayerHeld(player);
             }
         }
     }
@@ -218,14 +221,14 @@ public class CharmModule extends Module {
             List<Charm> currentCharms = getCharms(event.getCurrentItem());
             for (Charm charm : currentCharms) {
                 for (CharmEffect effect : charm.charmEffects()) {
-                    effect.onStopHolding(player);
+                    effect.stopPlayerHold(player);
                 }
             }
 
             List<Charm> cursorCharms = getCharms(event.getCursor());
             for (Charm charm : cursorCharms) {
                 for (CharmEffect effect : charm.charmEffects()) {
-                    effect.onStartHolding(player);
+                    effect.markPlayerHeld(player);
                 }
             }
         }
@@ -240,7 +243,7 @@ public class CharmModule extends Module {
         List<Charm> cursorCharms = getCharms(event.getOldCursor());
         for (Charm charm : cursorCharms) {
             for (CharmEffect effect : charm.charmEffects()) {
-                effect.onStartHolding(player);
+                effect.markPlayerHeld(player);
             }
         }
     }
@@ -271,5 +274,28 @@ public class CharmModule extends Module {
                 active.onPlayerInteract(event.getPlayer(), event.getRightClicked());
             }
         }
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        for (Charm charm : getHeldCharms(event.getPlayer())) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.stopPlayerHold(event.getPlayer());
+            }
+        }
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        for (Charm charm : getHeldCharms(event.getPlayer())) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.markPlayerHeld(event.getPlayer());
+            }
+        }
+    }
+
+    @Override
+    public synchronized ModuleTask addTask(Runnable runnable) {
+        return super.addTask(runnable);
     }
 }

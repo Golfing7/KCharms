@@ -17,7 +17,6 @@ import java.util.Map;
 /**
  * Gives you immunities to certain potion effects.
  */
-@AllArgsConstructor
 public class CharmEffectPotionImmunity extends CharmEffect {
     /**
      * Maps effect type to the amplifier and up that the player is immune to.
@@ -25,7 +24,23 @@ public class CharmEffectPotionImmunity extends CharmEffect {
      * i.e. if this contains WEAKNESS: 1, the player is immune to weakness 2+, but weakness 1 will still be applied.
      * </p>
      */
-    private Map<PotionEffectType, Integer> potionEffectImmunities;
+    private final Map<PotionEffectType, Integer> potionEffectImmunities;
+
+    public CharmEffectPotionImmunity(ConfigurationSection section) {
+        super(section);
+        Preconditions.checkArgument(section.isConfigurationSection("immunities"), "Must contain a list `potion-effects`");
+
+        potionEffectImmunities = new HashMap<>();
+        ConfigurationSection immunitySection = section.getConfigurationSection("immunities");
+        for (String effect : immunitySection.getKeys(false)) {
+            PotionEffectType type = PotionEffectType.getByName(effect);
+            if (type == null)
+                throw new IllegalArgumentException("Potion effect %s doesn't exist.".formatted(effect));
+
+            int amplifier = immunitySection.getInt(effect);
+            potionEffectImmunities.put(type, amplifier);
+        }
+    }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEffectApply(EntityPotionEffectEvent event) {
@@ -36,6 +51,9 @@ public class CharmEffectPotionImmunity extends CharmEffect {
             return;
 
         if (!potionEffectImmunities.containsKey(event.getNewEffect().getType()))
+            return;
+
+        if (!isAffectedByCharm(player))
             return;
 
         int amplifierResistant = potionEffectImmunities.get(event.getNewEffect().getType());
@@ -50,27 +68,5 @@ public class CharmEffectPotionImmunity extends CharmEffect {
                 player.addPotionEffect(event.getNewEffect().withAmplifier(amplifierResistant - 1));
             });
         }
-    }
-
-    /**
-     * Loads an instance from the given config section.
-     *
-     * @param section the section.
-     * @return the potion effect.
-     */
-    public static CharmEffectPotionImmunity fromConfig(ConfigurationSection section) {
-        Preconditions.checkArgument(section.isConfigurationSection("immunities"), "Must contain a list `potion-effects`");
-
-        Map<PotionEffectType, Integer> immunities = new HashMap<>();
-        ConfigurationSection immunitySection = section.getConfigurationSection("immunities");
-        for (String effect : immunitySection.getKeys(false)) {
-            PotionEffectType type = PotionEffectType.getByName(effect);
-            if (type == null)
-                throw new IllegalArgumentException("Potion effect %s doesn't exist.".formatted(effect));
-
-            int amplifier = immunitySection.getInt(effect);
-            immunities.put(type, amplifier);
-        }
-        return new CharmEffectPotionImmunity(immunities);
     }
 }

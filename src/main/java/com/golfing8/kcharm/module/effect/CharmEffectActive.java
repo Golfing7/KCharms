@@ -2,6 +2,7 @@ package com.golfing8.kcharm.module.effect;
 
 import com.golfing8.kcharm.KCharms;
 import com.golfing8.kcommon.struct.map.CooldownMap;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -12,6 +13,10 @@ import org.bukkit.entity.Player;
 public abstract class CharmEffectActive extends CharmEffect {
     /** Stores cooldowns for this charm */
     protected final CooldownMap cooldownMap = new CooldownMap(KCharms.getInstance());
+
+    public CharmEffectActive(ConfigurationSection section) {
+        super(section);
+    }
 
     /**
      * Called when a player right-click interacts.

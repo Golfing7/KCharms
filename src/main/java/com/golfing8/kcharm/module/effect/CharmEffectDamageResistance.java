@@ -15,12 +15,24 @@ import java.util.Set;
 /**
  * Modifies incoming damage for a player holding a charm.
  */
-@AllArgsConstructor
 public class CharmEffectDamageResistance extends CharmEffect {
     /** The damage causes that will receive the modified damage. */
     private final Set<EntityDamageEvent.DamageCause> damageCauses;
     /** The modifier of damage */
     private final double damageModifier;
+
+    public CharmEffectDamageResistance(ConfigurationSection section) {
+        super(section);
+        Preconditions.checkArgument(section.isDouble("damage-modifier"), "Must contain 'damage-modifier'");
+
+        this.damageModifier = section.getDouble("damage-modifier");
+        this.damageCauses = new HashSet<>();
+        if (section.isList("causes")) {
+            for (String str : section.getStringList("causes")) {
+                damageCauses.add(EntityDamageEvent.DamageCause.valueOf(str));
+            }
+        }
+    }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
@@ -31,19 +43,5 @@ public class CharmEffectDamageResistance extends CharmEffect {
             return;
 
         event.setDamage(event.getDamage() * damageModifier);
-    }
-
-    public static CharmEffectDamageResistance fromConfig(ConfigurationSection section) {
-        Preconditions.checkArgument(section.isDouble("damage-modifier"), "Must contain 'damage-modifier'");
-
-        double damageMod = section.getDouble("damage-modifier");
-        Set<EntityDamageEvent.DamageCause> causes = new HashSet<>();
-        if (section.isList("causes")) {
-            for (String str : section.getStringList("causes")) {
-                causes.add(EntityDamageEvent.DamageCause.valueOf(str));
-            }
-        }
-
-        return new CharmEffectDamageResistance(causes, damageMod);
     }
 }

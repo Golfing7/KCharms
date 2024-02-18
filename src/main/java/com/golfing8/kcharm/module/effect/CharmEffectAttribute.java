@@ -14,54 +14,16 @@ import java.util.*;
 /**
  * Lets you modify a player's attributes directly.
  */
-@AllArgsConstructor
 public class CharmEffectAttribute extends CharmEffect {
     /** Contains all attribute modifiers for certain attributes */
     private final Map<Attribute, List<AttributeModifier>> attributeModifiers;
 
-    @Override
-    public void onStartHolding(Player player) {
-        for (var entry : attributeModifiers.entrySet()) {
-            AttributeInstance instance = player.getAttribute(entry.getKey());
-            if (instance == null)
-                continue;
-
-            for (AttributeModifier modifier : entry.getValue()) {
-                if (instance.getModifier(modifier.getUniqueId()) != null)
-                    continue;
-
-                instance.addTransientModifier(modifier);
-            }
-        }
-    }
-
-    @Override
-    public void onStopHolding(Player player) {
-        for (var entry : attributeModifiers.entrySet()) {
-            AttributeInstance instance = player.getAttribute(entry.getKey());
-            if (instance == null)
-                continue;
-
-            for (AttributeModifier modifier : entry.getValue()) {
-                if (instance.getModifier(modifier.getUniqueId()) == null)
-                    continue;
-
-                instance.removeModifier(modifier);
-            }
-        }
-    }
-
-    /**
-     * Loads an instance of this from the config section.
-     *
-     * @param section the config section.
-     * @return the charm effect instance
-     */
-    public static CharmEffectAttribute fromConfig(ConfigurationSection section) {
+    public CharmEffectAttribute(ConfigurationSection section) {
+        super(section);
         Preconditions.checkArgument(section.isConfigurationSection("modifiers"), "Must contain 'modifiers' in config");
 
         CharmModule module = CharmModule.get();
-        Map<Attribute, List<AttributeModifier>> attributeModifiers = new HashMap<>();
+        this.attributeModifiers = new HashMap<>();
         ConfigurationSection modSection = section.getConfigurationSection("modifiers");
         for (String type : modSection.getKeys(false)) {
             Attribute attribute;
@@ -86,6 +48,37 @@ public class CharmEffectAttribute extends CharmEffect {
             AttributeModifier modifier = new AttributeModifier(uuid, uuid.toString(), number, operation);
             attributeModifiers.computeIfAbsent(attribute, (k) -> new ArrayList<>()).add(modifier);
         }
-        return new CharmEffectAttribute(attributeModifiers);
+    }
+
+    @Override
+    public void startEffect(Player player) {
+        for (var entry : attributeModifiers.entrySet()) {
+            AttributeInstance instance = player.getAttribute(entry.getKey());
+            if (instance == null)
+                continue;
+
+            for (AttributeModifier modifier : entry.getValue()) {
+                if (instance.getModifier(modifier.getUniqueId()) != null)
+                    continue;
+
+                instance.addTransientModifier(modifier);
+            }
+        }
+    }
+
+    @Override
+    public void stopEffect(Player player) {
+        for (var entry : attributeModifiers.entrySet()) {
+            AttributeInstance instance = player.getAttribute(entry.getKey());
+            if (instance == null)
+                continue;
+
+            for (AttributeModifier modifier : entry.getValue()) {
+                if (instance.getModifier(modifier.getUniqueId()) == null)
+                    continue;
+
+                instance.removeModifier(modifier);
+            }
+        }
     }
 }
