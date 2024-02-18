@@ -2,6 +2,7 @@ package com.golfing8.kcharm.module;
 
 import com.golfing8.kcharm.module.cmd.CharmCommand;
 import com.golfing8.kcharm.module.effect.CharmEffect;
+import com.golfing8.kcharm.module.effect.CharmEffectActive;
 import com.golfing8.kcharm.module.effect.CharmEffectType;
 import com.golfing8.kcharm.module.struct.Charm;
 import com.golfing8.kcommon.config.generator.Conf;
@@ -16,9 +17,12 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
@@ -237,6 +241,34 @@ public class CharmModule extends Module {
         for (Charm charm : cursorCharms) {
             for (CharmEffect effect : charm.charmEffects()) {
                 effect.onStartHolding(player);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK)
+            return;
+
+        ItemStack clickedWithItem = event.getItem();
+        for (Charm charm : getCharms(clickedWithItem)) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                if (!(effect instanceof CharmEffectActive active))
+                    continue;
+
+                active.onInteract(event.getPlayer());
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onInteractEntity(PlayerInteractEntityEvent event) {
+        for (Charm charm : getHeldCharms(event.getPlayer())) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                if (!(effect instanceof CharmEffectActive active))
+                    continue;
+
+                active.onPlayerInteract(event.getPlayer(), event.getRightClicked());
             }
         }
     }

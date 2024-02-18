@@ -16,7 +16,7 @@ import java.util.List;
  * Gives players potion effects when holding a specific charm.
  */
 @AllArgsConstructor
-public class CharmPotionEffect extends CharmEffect {
+public class CharmEffectPotion extends CharmEffect {
     private final List<PotionEffect> giveOnHold;
 
     @Override
@@ -49,13 +49,13 @@ public class CharmPotionEffect extends CharmEffect {
      * @param section the section.
      * @return the potion effect.
      */
-    public static CharmPotionEffect fromConfig(ConfigurationSection section) {
+    public static CharmEffectPotion fromConfig(ConfigurationSection section) {
         Preconditions.checkArgument(section.isList("potion-effects"), "Must contain a list `potion-effects`");
 
         List<PotionEffect> allEffects = new ArrayList<>();
         for (String potEffect : section.getStringList("potion-effects")) {
             allEffects.add(ConfigTypeRegistry.getFromType(ConfigPrimitive.ofString(potEffect), PotionEffect.class));
         }
-        return new CharmPotionEffect(allEffects);
+        return new CharmEffectPotion(allEffects);
     }
 }

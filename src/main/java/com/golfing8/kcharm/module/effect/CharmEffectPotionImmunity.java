@@ -1,9 +1,6 @@
 package com.golfing8.kcharm.module.effect;
 
 import com.golfing8.kcharm.KCharms;
-import com.golfing8.kcommon.NMS;
-import com.golfing8.kcommon.config.ConfigTypeRegistry;
-import com.golfing8.kcommon.config.adapter.ConfigPrimitive;
 import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import org.bukkit.Bukkit;
@@ -12,19 +9,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Gives you immunities to certain potion effects.
  */
 @AllArgsConstructor
-public class CharmPotionEffectImmunity extends CharmEffect {
+public class CharmEffectPotionImmunity extends CharmEffect {
     /**
      * Maps effect type to the amplifier and up that the player is immune to.
      * <p>
@@ -64,7 +58,7 @@ public class CharmPotionEffectImmunity extends CharmEffect {
      * @param section the section.
      * @return the potion effect.
      */
-    public static CharmPotionEffectImmunity fromConfig(ConfigurationSection section) {
+    public static CharmEffectPotionImmunity fromConfig(ConfigurationSection section) {
         Preconditions.checkArgument(section.isConfigurationSection("immunities"), "Must contain a list `potion-effects`");
 
         Map<PotionEffectType, Integer> immunities = new HashMap<>();
@@ -77,6 +71,6 @@ public class CharmPotionEffectImmunity extends CharmEffect {
             int amplifier = immunitySection.getInt(effect);
             immunities.put(type, amplifier);
         }
-        return new CharmPotionEffectImmunity(immunities);
+        return new CharmEffectPotionImmunity(immunities);
     }
 }

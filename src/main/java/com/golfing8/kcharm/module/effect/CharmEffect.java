@@ -1,5 +1,7 @@
 package com.golfing8.kcharm.module.effect;
 
+import com.golfing8.kcharm.module.CharmModule;
+import com.golfing8.kcharm.module.struct.Charm;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
@@ -41,7 +43,11 @@ public abstract class CharmEffect implements Listener {
      * @return if they're holding this charm.
      */
     protected boolean isHoldingCharm(Player player) {
-        //TODO
+        CharmModule module = CharmModule.get();
+        for (Charm charm : module.getHeldCharms(player)) {
+            if (charm.charmEffects().contains(this))
+                return true;
+        }
         return false;
     }
 }

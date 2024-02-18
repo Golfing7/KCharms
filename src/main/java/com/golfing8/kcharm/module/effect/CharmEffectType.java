@@ -12,8 +12,10 @@ import java.util.function.Function;
  */
 @AllArgsConstructor
 public enum CharmEffectType {
-    POTION(CharmPotionEffect::fromConfig),
-    POTION_IMMUNITY(CharmPotionEffectImmunity::fromConfig),
+    ATTRIBUTE(CharmEffectAttribute::fromConfig),
+    DAMAGE_RESISTANCE(CharmEffectDamageResistance::fromConfig),
+    POTION(CharmEffectPotion::fromConfig),
+    POTION_IMMUNITY(CharmEffectPotionImmunity::fromConfig),
     ;
 
     /** Maps a config section to a loaded instance of a charm effect */
