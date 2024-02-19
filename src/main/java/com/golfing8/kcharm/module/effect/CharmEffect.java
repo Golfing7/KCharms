@@ -1,17 +1,17 @@
 package com.golfing8.kcharm.module.effect;
 
+import com.golfing8.kcharm.KCharms;
 import com.golfing8.kcharm.module.CharmModule;
-import com.golfing8.kcharm.module.struct.Charm;
+import com.golfing8.kcommon.struct.map.CooldownMap;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -24,6 +24,14 @@ public abstract class CharmEffect implements Listener {
     /** All players who are currently holding this charm */
     private final Set<Player> holdingPlayers = new HashSet<>();
 
+    /** Stores cooldowns for this charm */
+    protected final CooldownMap cooldownMap = new CooldownMap(KCharms.getInstance());
+    /** The length in ticks the cooldown should last */
+    @Getter
+    private int cooldownLengthTicks = -1;
+    /** How long the effect *can* work */
+    @Getter
+    private int effectDurationTicks = -1;
     /** Contains all players who are currently under the effect of this charm. */
     private Set<Player> affectedPlayers = new HashSet<>();
     /** The range of efficacy taken from the player's feet */
@@ -37,14 +45,18 @@ public abstract class CharmEffect implements Listener {
         CharmModule module = CharmModule.get();
         module.addTask(this::tickAffectedPlayers).runTaskTimer(module.getPlugin(), 0, 20);
 
-        if (!section.contains("ranged"))
-            return;
-
-        this.effectiveRange = section.getDouble("ranged.range");
-        if (section.isList("ranged.players")) {
-            for (String str : section.getStringList("ranged.players")) {
-                this.effectSelections.add(CharmEffectSelection.valueOf(str));
+        if (section.contains("ranged")) {
+            this.effectiveRange = section.getDouble("ranged.range");
+            if (section.isList("ranged.players")) {
+                for (String str : section.getStringList("ranged.players")) {
+                    this.effectSelections.add(CharmEffectSelection.valueOf(str));
+                }
             }
+        }
+
+        if (section.contains("active")) {
+            this.effectDurationTicks = section.getInt("active.duration");
+            this.cooldownLengthTicks = section.getInt("active.cooldown-length");
         }
     }
 
@@ -60,6 +72,13 @@ public abstract class CharmEffect implements Listener {
 
         Set<Player> newAffectedPlayers = new HashSet<>();
         for (Player player : holdingPlayers) {
+            if (effectDurationTicks > 0) {
+                long currentCooldown = cooldownMap.getCooldownRemaining(player.getUniqueId()) / 50L;
+                long sinceActivation = cooldownLengthTicks - currentCooldown;
+                if (sinceActivation > effectDurationTicks)
+                    continue;
+            }
+
             if (this.effectSelections.contains(CharmEffectSelection.SELF)) {
                 tickEffect(player);
             }
@@ -117,6 +136,21 @@ public abstract class CharmEffect implements Listener {
     }
 
     /**
+     * Called when a player tries to activate an ability on this charm.
+     *
+     * @param activator the activator of the ability.
+     * @return true if the ability activated.
+     */
+    protected boolean tryStartAbility(Player activator) {
+        if (this.cooldownMap.isOnCooldown(activator.getUniqueId()))
+            return false;
+
+        this.cooldownMap.setCooldown(activator.getUniqueId(), this.cooldownLengthTicks * 50L);
+        this.tickAffectedPlayers();
+        return true;
+    }
+
+    /**
      * Called when a player has begun holding this charm's effect.
      *
      * @param player the player.
@@ -153,6 +187,21 @@ public abstract class CharmEffect implements Listener {
      * @param player the player that exited the range.
      */
     public void stopEffect(Player player) {}
+
+    /**
+     * Called when a player right-click interacts.
+     *
+     * @param player the player.
+     */
+    public void onInteract(Player player) {}
+
+    /**
+     * Called when a player holding a charm interacts AT another entity.
+     *
+     * @param interacting the player holding the charm.
+     * @param clicked the clicked entity.
+     */
+    public void onPlayerInteract(Player interacting, Entity clicked) {}
 
     /**
      * Checks if the given player is holding a charm with this effect.

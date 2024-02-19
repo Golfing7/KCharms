@@ -2,7 +2,6 @@ package com.golfing8.kcharm.module.struct;
 
 import com.golfing8.kcharm.module.CharmModule;
 import com.golfing8.kcharm.module.effect.CharmEffect;
-import com.golfing8.kcharm.module.effect.CharmEffectActive;
 import com.golfing8.kcommon.struct.item.ItemStackBuilder;
 import com.google.common.base.Preconditions;
 import de.tr7zw.kcommon.nbtapi.NBTCompound;

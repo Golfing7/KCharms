@@ -2,7 +2,6 @@ package com.golfing8.kcharm.module;
 
 import com.golfing8.kcharm.module.cmd.CharmCommand;
 import com.golfing8.kcharm.module.effect.CharmEffect;
-import com.golfing8.kcharm.module.effect.CharmEffectActive;
 import com.golfing8.kcharm.module.effect.CharmEffectType;
 import com.golfing8.kcharm.module.struct.Charm;
 import com.golfing8.kcommon.config.generator.Conf;
@@ -256,10 +255,7 @@ public class CharmModule extends Module {
         ItemStack clickedWithItem = event.getItem();
         for (Charm charm : getCharms(clickedWithItem)) {
             for (CharmEffect effect : charm.charmEffects()) {
-                if (!(effect instanceof CharmEffectActive active))
-                    continue;
-
-                active.onInteract(event.getPlayer());
+                effect.onInteract(event.getPlayer());
             }
         }
     }
@@ -268,10 +264,7 @@ public class CharmModule extends Module {
     public void onInteractEntity(PlayerInteractEntityEvent event) {
         for (Charm charm : getHeldCharms(event.getPlayer())) {
             for (CharmEffect effect : charm.charmEffects()) {
-                if (!(effect instanceof CharmEffectActive active))
-                    continue;
-
-                active.onPlayerInteract(event.getPlayer(), event.getRightClicked());
+                effect.onPlayerInteract(event.getPlayer(), event.getRightClicked());
             }
         }
     }
