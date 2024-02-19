@@ -49,11 +49,20 @@ public abstract class CharmEffect implements Listener {
     }
 
     private void tickAffectedPlayers() {
-        if (effectiveRange <= 0.0D)
+        if (effectiveRange <= 0.0D) {
+            if (this.effectSelections.contains(CharmEffectSelection.SELF)) {
+                for (Player player : this.affectedPlayers) {
+                    tickEffect(player);
+                }
+            }
             return;
+        }
 
         Set<Player> newAffectedPlayers = new HashSet<>();
         for (Player player : holdingPlayers) {
+            if (this.effectSelections.contains(CharmEffectSelection.SELF)) {
+                tickEffect(player);
+            }
             Set<Player> inRange = getAffectedPlayers(player);
             for (Player inRangePlayer : inRange) {
                 if (inRangePlayer == player)
@@ -95,6 +104,7 @@ public abstract class CharmEffect implements Listener {
     public final void markPlayerHeld(Player player) {
         this.holdingPlayers.add(player);
         this.onStartHolding(player);
+        this.startEffect(player);
         this.tickAffectedPlayers();
     }
 
