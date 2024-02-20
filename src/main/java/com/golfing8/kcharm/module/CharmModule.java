@@ -8,6 +8,7 @@ import com.golfing8.kcommon.config.generator.Conf;
 import com.golfing8.kcommon.module.Module;
 import com.golfing8.kcommon.module.ModuleInfo;
 import com.golfing8.kcommon.module.ModuleTask;
+import com.golfing8.kcommon.struct.map.CooldownMap;
 import de.tr7zw.kcommon.nbtapi.NBTCompound;
 import de.tr7zw.kcommon.nbtapi.NBTItem;
 import de.tr7zw.kcommon.nbtapi.NBTType;
@@ -15,14 +16,17 @@ import lombok.Getter;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -55,6 +59,9 @@ public class CharmModule extends Module {
     /** Contains all the loaded charm effects by ID */
     @Getter
     private Map<String, CharmEffect> charmEffects;
+
+    /** Used to prevent players from accidentally activating abilities */
+    private CooldownMap cantActivateAbilities = new CooldownMap();
 
     @Override
     public void onEnable() {
@@ -189,6 +196,10 @@ public class CharmModule extends Module {
         }
     }
 
+    private static ItemStack getCursoredItem(InventoryClickEvent event) {
+        return event.getClick() == ClickType.NUMBER_KEY ? event.getWhoClicked().getInventory().getItem(event.getHotbarButton()) : event.getCursor();
+    }
+
     // Off-hand click listener
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onOffhandClick(InventoryClickEvent event) {
@@ -205,7 +216,24 @@ public class CharmModule extends Module {
             }
         }
 
-        ItemStack cursor = event.getCursor();
+        ItemStack cursor = getCursoredItem(event);
+        for (Charm charm : getCharms(cursor)) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.markPlayerHeld(player);
+            }
+        }
+    }
+
+    // Off-hand click listener
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onOffhandClick(InventoryDragEvent event) {
+        if (!event.getInventorySlots().contains(40) || !(event.getWhoClicked() instanceof Player player))
+            return;
+
+        if (event.getInventory().getType() != InventoryType.PLAYER)
+            return;
+
+        ItemStack cursor = event.getOldCursor();
         for (Charm charm : getCharms(cursor)) {
             for (CharmEffect effect : charm.charmEffects()) {
                 effect.markPlayerHeld(player);
@@ -226,7 +254,7 @@ public class CharmModule extends Module {
                 }
             }
 
-            List<Charm> cursorCharms = getCharms(event.getCursor());
+            List<Charm> cursorCharms = getCharms(getCursoredItem(event));
             for (Charm charm : cursorCharms) {
                 for (CharmEffect effect : charm.charmEffects()) {
                     effect.markPlayerHeld(player);
@@ -250,14 +278,26 @@ public class CharmModule extends Module {
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onConsume(PlayerItemConsumeEvent event) {
+        this.cantActivateAbilities.setCooldown(event.getPlayer().getUniqueId(), 100L);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
     public void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK)
+            return;
+
+        if (event.useItemInHand() == Event.Result.ALLOW)
+            return;
+
+        if (this.cantActivateAbilities.isOnCooldown(event.getPlayer().getUniqueId()))
             return;
 
         ItemStack clickedWithItem = event.getItem();
         for (Charm charm : getCharms(clickedWithItem)) {
             for (CharmEffect effect : charm.charmEffects()) {
                 effect.onInteract(event.getPlayer());
+                effect.tryStartAbility(event.getPlayer());
             }
         }
     }

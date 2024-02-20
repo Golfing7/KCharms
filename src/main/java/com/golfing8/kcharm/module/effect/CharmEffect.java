@@ -2,7 +2,13 @@ package com.golfing8.kcharm.module.effect;
 
 import com.golfing8.kcharm.KCharms;
 import com.golfing8.kcharm.module.CharmModule;
+import com.golfing8.kcommon.NMS;
+import com.golfing8.kcommon.config.lang.Message;
 import com.golfing8.kcommon.struct.map.CooldownMap;
+import com.golfing8.kcommon.util.MS;
+import com.golfing8.kcommon.util.PlayerUtil;
+import com.golfing8.kcommon.util.ProgressBar;
+import com.golfing8.kcommon.util.StringUtil;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,6 +17,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,6 +29,8 @@ import java.util.Set;
  * </p>
  */
 public abstract class CharmEffect implements Listener {
+    private static final NumberFormat DURATION_FORMAT = new DecimalFormat("###.#");
+
     /** All players who are currently holding this charm */
     private final Set<Player> holdingPlayers = new HashSet<>();
 
@@ -40,10 +50,15 @@ public abstract class CharmEffect implements Listener {
     /** The players that this can select, if empty defaults to SELF */
     @Getter
     private Set<CharmEffectSelection> effectSelections = Sets.newHashSet(CharmEffectSelection.SELF);
+    @Getter
+    private String cooldownMsg;
+    @Getter
+    private String offCooldownMsg;
 
     public CharmEffect(ConfigurationSection section) {
         CharmModule module = CharmModule.get();
         module.addTask(this::tickAffectedPlayers).runTaskTimer(module.getPlugin(), 0, 20);
+        module.addTask(this::tickCooldown).runTaskTimer(module.getPlugin(), 0, 2);
 
         if (section.contains("ranged")) {
             this.effectiveRange = section.getDouble("ranged.range");
@@ -55,6 +70,8 @@ public abstract class CharmEffect implements Listener {
         }
 
         if (section.contains("active")) {
+            this.cooldownMsg = section.getString("active.cooldown-message");
+            this.offCooldownMsg = section.getString("active.off-cooldown-message");
             this.effectDurationTicks = section.getInt("active.duration");
             this.cooldownLengthTicks = section.getInt("active.cooldown-length");
         }
@@ -69,16 +86,27 @@ public abstract class CharmEffect implements Listener {
         }
     }
 
-    private void tickAffectedPlayers() {
-        if (effectiveRange <= 0.0D) {
-            if (this.effectSelections.contains(CharmEffectSelection.SELF)) {
-                for (Player player : this.affectedPlayers) {
-                    tickEffect(player);
-                }
-            }
+    private void tickCooldown() {
+        if (effectDurationTicks <= 0)
             return;
-        }
 
+        for (Player player : holdingPlayers) {
+            if (!cooldownMap.isOnCooldown(player.getUniqueId())) {
+                NMS.getTheNMS().sendActionBar(player, MS.parseSingle(offCooldownMsg));
+                continue;
+            }
+
+            long cooldownLengthMS = cooldownLengthTicks;
+            long currentCooldown = cooldownMap.getCooldownRemaining(player.getUniqueId()) / 50L;
+            if (this.cooldownMsg != null) {
+                NMS.getTheNMS().sendActionBar(player, MS.parseSingle(cooldownMsg,
+                        "PROGRESS_BAR", ProgressBar.getProgressBar(cooldownLengthMS - currentCooldown, cooldownLengthMS, ProgressBar.BOX_UNICODE, 10),
+                        "TIME_LEFT", DURATION_FORMAT.format(currentCooldown / 20F)));
+            }
+        }
+    }
+
+    private void tickAffectedPlayers() {
         Set<Player> newAffectedPlayers = new HashSet<>();
         for (Player player : holdingPlayers) {
             if (effectDurationTicks > 0) {
@@ -124,14 +152,12 @@ public abstract class CharmEffect implements Listener {
     public final void markPlayerHeld(Player player) {
         this.holdingPlayers.add(player);
         this.onStartHolding(player);
-        this.startEffect(player);
         this.tickAffectedPlayers();
     }
 
     public final void stopPlayerHold(Player player) {
         // The order is important as we want isHoldingCharm to be true for when a player stops holding the charm.
         this.onStopHolding(player);
-        this.stopEffect(player);
         this.holdingPlayers.remove(player);
         this.tickAffectedPlayers();
     }
@@ -142,7 +168,7 @@ public abstract class CharmEffect implements Listener {
      * @param activator the activator of the ability.
      * @return true if the ability activated.
      */
-    protected boolean tryStartAbility(Player activator) {
+    public boolean tryStartAbility(Player activator) {
         if (this.cooldownMap.isOnCooldown(activator.getUniqueId()))
             return false;
 
