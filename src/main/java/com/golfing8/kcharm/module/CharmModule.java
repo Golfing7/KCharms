@@ -80,7 +80,9 @@ public class CharmModule extends Module {
 
     @Override
     public void onDisable() {
-
+        for (CharmEffect effect : this.charmEffects.values()) {
+            effect.shutdown();
+        }
     }
 
     /**

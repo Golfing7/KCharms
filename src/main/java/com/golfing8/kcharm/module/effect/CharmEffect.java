@@ -60,6 +60,15 @@ public abstract class CharmEffect implements Listener {
         }
     }
 
+    /**
+     * Called when this charm needs to remove effects from all affected players.
+     */
+    public void shutdown() {
+        for (Player player : this.affectedPlayers) {
+            stopEffect(player);
+        }
+    }
+
     private void tickAffectedPlayers() {
         if (effectiveRange <= 0.0D) {
             if (this.effectSelections.contains(CharmEffectSelection.SELF)) {
@@ -79,16 +88,8 @@ public abstract class CharmEffect implements Listener {
                     continue;
             }
 
-            if (this.effectSelections.contains(CharmEffectSelection.SELF)) {
-                tickEffect(player);
-            }
             Set<Player> inRange = getAffectedPlayers(player);
-            for (Player inRangePlayer : inRange) {
-                if (inRangePlayer == player)
-                    continue;
-
-                newAffectedPlayers.add(inRangePlayer);
-            }
+            newAffectedPlayers.addAll(inRange);
         }
 
         for (Player player : newAffectedPlayers) {
@@ -220,6 +221,6 @@ public abstract class CharmEffect implements Listener {
      * @return if they're affected by this charm.
      */
     public boolean isAffectedByCharm(Player player) {
-        return (this.holdingPlayers.contains(player) && this.effectSelections.contains(CharmEffectSelection.SELF)) || this.affectedPlayers.contains(player);
+        return this.affectedPlayers.contains(player);
     }
 }
