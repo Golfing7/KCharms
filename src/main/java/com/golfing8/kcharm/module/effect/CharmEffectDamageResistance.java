@@ -36,10 +36,13 @@ public class CharmEffectDamageResistance extends CharmEffect {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof Player))
+        if (!(event.getEntity() instanceof Player player))
             return;
 
         if (!damageCauses.isEmpty() && !damageCauses.contains(event.getCause()))
+            return;
+
+        if (!isAffectedByCharm(player))
             return;
 
         event.setDamage(event.getDamage() * damageModifier);
