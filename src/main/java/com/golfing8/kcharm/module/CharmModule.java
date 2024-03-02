@@ -13,6 +13,7 @@ import de.tr7zw.kcommon.nbtapi.NBTCompound;
 import de.tr7zw.kcommon.nbtapi.NBTItem;
 import de.tr7zw.kcommon.nbtapi.NBTType;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -31,6 +32,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
@@ -83,6 +85,14 @@ public class CharmModule extends Module {
         }
 
         this.addCommand(new CharmCommand());
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            for (Charm charm : getHeldCharms(player)) {
+                for (CharmEffect effect : charm.charmEffects()) {
+                    effect.markPlayerHeld(player);
+                }
+            }
+        }
     }
 
     @Override
@@ -293,6 +303,9 @@ public class CharmModule extends Module {
         if (this.cantActivateAbilities.isOnCooldown(event.getPlayer().getUniqueId()))
             return;
 
+        if (event.getHand() == EquipmentSlot.HAND && !allowMainHandCharms)
+            return;
+
         ItemStack clickedWithItem = event.getItem();
         for (Charm charm : getCharms(clickedWithItem)) {
             for (CharmEffect effect : charm.charmEffects()) {
@@ -315,7 +328,7 @@ public class CharmModule extends Module {
     public void onQuit(PlayerQuitEvent event) {
         for (Charm charm : getHeldCharms(event.getPlayer())) {
             for (CharmEffect effect : charm.charmEffects()) {
-                effect.stopPlayerHold(event.getPlayer());
+                effect.playerQuit(event.getPlayer());
             }
         }
     }

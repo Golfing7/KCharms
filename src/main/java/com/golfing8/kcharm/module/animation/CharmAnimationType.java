@@ -15,6 +15,10 @@ import java.util.function.Function;
 @AllArgsConstructor
 public enum CharmAnimationType {
     MESSAGE(CharmAnimationMessage::new),
+    GLOW(CharmAnimationGlow::new),
+    TEXT_DISPLAY(CharmAnimationTextDisplay::new),
+    BLOCK_DISPLAY(CharmAnimationBlockDisplay::new),
+    ITEM_DISPLAY(CharmAnimationItemDisplay::new),
     ;
 
     /** Maps a config section to a loaded instance of a charm animation */

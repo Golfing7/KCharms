@@ -4,13 +4,9 @@ import com.golfing8.kcharm.KCharms;
 import com.golfing8.kcharm.module.CharmModule;
 import com.golfing8.kcharm.module.animation.CharmAnimation;
 import com.golfing8.kcharm.module.animation.CharmAnimationType;
-import com.golfing8.kcommon.NMS;
 import com.golfing8.kcommon.config.lang.Message;
 import com.golfing8.kcommon.struct.map.CooldownMap;
-import com.golfing8.kcommon.util.MS;
-import com.golfing8.kcommon.util.PlayerUtil;
 import com.golfing8.kcommon.util.ProgressBar;
-import com.golfing8.kcommon.util.StringUtil;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
@@ -97,6 +93,9 @@ public abstract class CharmEffect implements Listener {
     public void shutdown() {
         for (Player player : this.affectedPlayers) {
             stopEffect(player);
+            for (CharmAnimation animation : this.charmAnimations) {
+                animation.stopEffect(player);
+            }
         }
     }
 
@@ -158,6 +157,9 @@ public abstract class CharmEffect implements Listener {
         for (Player player : this.affectedPlayers) {
             if (!newAffectedPlayers.contains(player)) {
                 this.stopEffect(player);
+                for (CharmAnimation animation : this.charmAnimations) {
+                    animation.stopEffect(player);
+                }
             }
         }
 
@@ -190,13 +192,31 @@ public abstract class CharmEffect implements Listener {
     }
 
     /**
+     * Meant to handle the event when a player quits the server.
+     *
+     * @param player the player.
+     */
+    public final void playerQuit(Player player) {
+        if (this.holdingPlayers.remove(player)) {
+            this.stopPlayerHold(player);
+        }
+
+        if (this.affectedPlayers.remove(player)) {
+            this.stopEffect(player);
+            for (CharmAnimation animation : this.charmAnimations) {
+                animation.stopEffect(player);
+            }
+        }
+    }
+
+    /**
      * Called when a player tries to activate an ability on this charm.
      *
      * @param activator the activator of the ability.
      * @return true if the ability activated.
      */
     public boolean tryStartAbility(Player activator) {
-        if (this.cooldownMap.isOnCooldown(activator.getUniqueId()))
+        if (this.cooldownMap.isOnCooldown(activator.getUniqueId()) || this.cooldownLengthTicks <= 0)
             return false;
 
         this.cooldownMap.setCooldown(activator.getUniqueId(), this.cooldownLengthTicks * 50L);

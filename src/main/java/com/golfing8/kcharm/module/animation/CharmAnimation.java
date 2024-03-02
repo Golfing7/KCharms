@@ -3,7 +3,6 @@ package com.golfing8.kcharm.module.animation;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -41,4 +40,12 @@ public abstract class CharmAnimation {
      * @param affectedPlayers the players under the affect of the charm.
      */
     public void onDeactivate(Player holdingCharm, Set<Player> affectedPlayers) {}
+
+    /**
+     * Called when a player is no longer being affected by a charm's effect.
+     * This is used as players may quit the server or in some way leave the effective range of the charm's effect.
+     *
+     * @param player the player.
+     */
+    public void stopEffect(Player player) {}
 }
