@@ -122,7 +122,7 @@ public abstract class CharmEffect implements Listener {
             long currentCooldown = cooldownMap.getCooldownRemaining(player.getUniqueId()) / 50L;
             if (this.cooldownMsg != null) {
                 cooldownMsg.send(player,
-                        "PROGRESS_BAR", "PROGRESS_BAR", ProgressBar.getProgressBar(cooldownLengthMS - currentCooldown, cooldownLengthMS, ProgressBar.BOX_UNICODE, 10),
+                        "PROGRESS_BAR", ProgressBar.getProgressBar(cooldownLengthMS - currentCooldown, cooldownLengthMS, ProgressBar.BOX_UNICODE, 10),
                         "TIME_LEFT", DURATION_FORMAT.format(currentCooldown / 20F));
             }
         }
