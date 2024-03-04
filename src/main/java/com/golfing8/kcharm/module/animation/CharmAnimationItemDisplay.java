@@ -25,8 +25,6 @@ public class CharmAnimationItemDisplay extends CharmAnimationDisplay {
     private final ItemStackBuilder item;
     private final ItemDisplay.ItemDisplayTransform transform;
 
-    private final Map<Player, ItemDisplay> spawnedDisplays = new HashMap<>();
-
     public CharmAnimationItemDisplay(ConfigurationSection section) {
         super(section);
 
@@ -50,35 +48,5 @@ public class CharmAnimationItemDisplay extends CharmAnimationDisplay {
         ItemDisplay display = location.getWorld().spawn(location, ItemDisplay.class);
         adaptDisplay(display);
         return display;
-    }
-
-    @Override
-    public void onActivate(Player holdingCharm, Set<Player> affectedPlayers) {
-        for (Player player : affectedPlayers) {
-            Location playerLocation = player.getLocation();
-            playerLocation.setYaw(0.0F);
-            playerLocation.setPitch(0.0F);
-            ItemDisplay value = spawnDisplay(playerLocation.add(0, 3, 0));
-            player.addPassenger(value);
-            spawnedDisplays.put(player, value);
-        }
-    }
-
-    @Override
-    public void onDeactivate(Player holdingCharm, Set<Player> affectedPlayers) {
-        for (Player player : affectedPlayers) {
-            if (!spawnedDisplays.containsKey(player))
-                continue;
-
-            spawnedDisplays.remove(player).remove();
-        }
-    }
-
-    @Override
-    public void stopEffect(Player player) {
-        if (!spawnedDisplays.containsKey(player))
-            return;
-
-        spawnedDisplays.remove(player).remove();
     }
 }

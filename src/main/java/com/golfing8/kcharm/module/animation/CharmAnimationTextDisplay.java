@@ -27,8 +27,6 @@ public class CharmAnimationTextDisplay extends CharmAnimationDisplay {
     private final boolean defaultBG;
     private final TextDisplay.TextAlignment alignment;
 
-    private final Map<Player, TextDisplay> spawnedDisplays = new HashMap<>();
-
     public CharmAnimationTextDisplay(ConfigurationSection section) {
         super(section);
 
@@ -62,35 +60,5 @@ public class CharmAnimationTextDisplay extends CharmAnimationDisplay {
         TextDisplay display = location.getWorld().spawn(location, TextDisplay.class);
         adaptDisplay(display);
         return display;
-    }
-
-    @Override
-    public void onActivate(Player holdingCharm, Set<Player> affectedPlayers) {
-        for (Player player : affectedPlayers) {
-            Location playerLocation = player.getLocation();
-            playerLocation.setYaw(0.0F);
-            playerLocation.setPitch(0.0F);
-            TextDisplay value = spawnDisplay(playerLocation.add(0, 3, 0));
-            player.addPassenger(value);
-            spawnedDisplays.put(player, value);
-        }
-    }
-
-    @Override
-    public void onDeactivate(Player holdingCharm, Set<Player> affectedPlayers) {
-        for (Player player : affectedPlayers) {
-            if (!spawnedDisplays.containsKey(player))
-                continue;
-
-            spawnedDisplays.remove(player).remove();
-        }
-    }
-
-    @Override
-    public void stopEffect(Player player) {
-        if (!spawnedDisplays.containsKey(player))
-            return;
-
-        spawnedDisplays.remove(player).remove();
     }
 }

@@ -16,6 +16,11 @@ public abstract class CharmAnimation {
     public CharmAnimation(ConfigurationSection section) {}
 
     /**
+     * Called when the module is shutting down.
+     */
+    public void shutdown() {}
+
+    /**
      * Called when an active-style charm is activated.
      * This is NEVER called for passive charm effects.
      *
