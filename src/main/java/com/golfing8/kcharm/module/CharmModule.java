@@ -9,6 +9,7 @@ import com.golfing8.kcommon.module.Module;
 import com.golfing8.kcommon.module.ModuleInfo;
 import com.golfing8.kcommon.module.ModuleTask;
 import com.golfing8.kcommon.struct.map.CooldownMap;
+import com.kamikazejam.factionintegrations.FactionIntegrations;
 import de.tr7zw.kcommon.nbtapi.NBTCompound;
 import de.tr7zw.kcommon.nbtapi.NBTItem;
 import de.tr7zw.kcommon.nbtapi.NBTType;

@@ -1,6 +1,5 @@
 package com.golfing8.kcharm.module.effect;
 
-import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bukkit.configuration.ConfigurationSection;
@@ -29,7 +28,8 @@ public enum CharmEffectType {
      * @return the effect.
      */
     public static CharmEffect fromConfig(ConfigurationSection section) {
-        Preconditions.checkArgument(section.isString("type"));
+        if (!section.isString("type"))
+            throw new IllegalArgumentException("Type must be string. Was " + section.getString("type"));
 
         CharmEffectType type;
         try {

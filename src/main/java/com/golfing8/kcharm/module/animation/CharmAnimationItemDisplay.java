@@ -1,6 +1,5 @@
 package com.golfing8.kcharm.module.animation;
 
-import com.cryptomorin.xseries.XMaterial;
 import com.golfing8.kcommon.config.ConfigTypeRegistry;
 import com.golfing8.kcommon.config.adapter.ConfigPrimitive;
 import com.golfing8.kcommon.struct.item.ItemStackBuilder;

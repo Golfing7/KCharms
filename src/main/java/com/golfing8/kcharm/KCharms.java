@@ -1,6 +1,7 @@
 package com.golfing8.kcharm;
 
 import com.golfing8.kcommon.KPlugin;
+import com.kamikazejam.factionintegrations.FactionIntegrations;
 import lombok.Getter;
 
 /**
@@ -13,5 +14,6 @@ public class KCharms extends KPlugin {
     @Override
     public void onEnableInner() {
         instance = this;
+        FactionIntegrations.setup(this);
     }
 }

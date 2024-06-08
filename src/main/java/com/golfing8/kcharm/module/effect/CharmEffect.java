@@ -7,6 +7,7 @@ import com.golfing8.kcharm.module.animation.CharmAnimationType;
 import com.golfing8.kcommon.config.lang.Message;
 import com.golfing8.kcommon.struct.map.CooldownMap;
 import com.golfing8.kcommon.util.ProgressBar;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,6 +22,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * Defines an effect that a charm has.
@@ -38,6 +41,8 @@ public abstract class CharmEffect implements Listener {
     private Set<Player> affectedPlayers = new HashSet<>();
     /** The players that this can select, if empty defaults to SELF */
     private final Set<CharmEffectSelection> effectSelections = Sets.newHashSet(CharmEffectSelection.SELF);
+    /** An effective selection predicate that combines all predicates of {@link #effectSelections}. */
+    private transient BiPredicate<Player, Player> effectiveSelectionPredicate;
     /** The animations that will play with this effect */
     private final List<CharmAnimation> charmAnimations = new ArrayList<>();
     /** Stores cooldowns for this charm */
@@ -70,6 +75,15 @@ public abstract class CharmEffect implements Listener {
                 }
             }
         }
+
+        // Compose the predicate
+        this.effectiveSelectionPredicate = (p1, p2) -> {
+            for (var type : effectSelections) {
+                if (type.getApplicablePredicate().test(p1, p2))
+                    return true;
+            }
+            return false;
+        };
 
         if (section.isConfigurationSection("active")) {
             this.useMsg = new Message(section.get("active.use-message"));
@@ -174,7 +188,10 @@ public abstract class CharmEffect implements Listener {
      */
     public Set<Player> getAffectedPlayers(Player player) {
         Set<Player> all = new HashSet<>();
-        effectSelections.forEach(selection -> all.addAll(selection.playerGetter.apply(player, effectiveRange)));
+        for (Player other : player.getLocation().getNearbyEntitiesByType(Player.class, effectiveRange)) {
+            if (effectiveSelectionPredicate.test(player, other))
+                all.add(other);
+        }
         return all;
     }
 
