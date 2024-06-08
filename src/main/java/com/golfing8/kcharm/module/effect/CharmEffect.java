@@ -4,6 +4,9 @@ import com.golfing8.kcharm.KCharms;
 import com.golfing8.kcharm.module.CharmModule;
 import com.golfing8.kcharm.module.animation.CharmAnimation;
 import com.golfing8.kcharm.module.animation.CharmAnimationType;
+import com.golfing8.kcharm.module.condition.CharmCondition;
+import com.golfing8.kcharm.module.condition.CharmConditionType;
+import com.golfing8.kcharm.module.condition.ConditionContext;
 import com.golfing8.kcommon.config.lang.Message;
 import com.golfing8.kcommon.struct.map.CooldownMap;
 import com.golfing8.kcommon.util.ProgressBar;
@@ -11,6 +14,7 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -18,10 +22,7 @@ import org.bukkit.event.Listener;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -35,14 +36,16 @@ import java.util.function.Predicate;
 public abstract class CharmEffect implements Listener {
     private static final NumberFormat DURATION_FORMAT = new DecimalFormat("###.#");
 
-    /** All players who are currently holding this charm */
-    private final Set<Player> holdingPlayers = new HashSet<>();
+    /** All players who are currently holding this charm mapped to the tick they started holding it. */
+    private final Map<Player, Integer> holdingPlayers = new HashMap<>();
     /** Contains all players who are currently under the effect of this charm. */
     private Set<Player> affectedPlayers = new HashSet<>();
     /** The players that this can select, if empty defaults to SELF */
     private final Set<CharmEffectSelection> effectSelections = Sets.newHashSet(CharmEffectSelection.SELF);
     /** An effective selection predicate that combines all predicates of {@link #effectSelections}. */
     private transient BiPredicate<Player, Player> effectiveSelectionPredicate;
+    /** All charm conditions */
+    private final Set<CharmCondition> charmConditions = new HashSet<>();
     /** The animations that will play with this effect */
     private final List<CharmAnimation> charmAnimations = new ArrayList<>();
     /** Stores cooldowns for this charm */
@@ -99,6 +102,13 @@ public abstract class CharmEffect implements Listener {
                 this.charmAnimations.add(CharmAnimationType.fromConfig(animationSection.getConfigurationSection(subKey)));
             }
         }
+
+        if (section.isConfigurationSection("conditions")) {
+            var conditionSection = section.getConfigurationSection("conditions");
+            for (String subKey : conditionSection.getKeys(false)) {
+                this.charmConditions.add(CharmConditionType.fromConfig(conditionSection.getConfigurationSection(subKey)));
+            }
+        }
     }
 
     /**
@@ -120,7 +130,7 @@ public abstract class CharmEffect implements Listener {
         if (effectDurationTicks <= 0)
             return;
 
-        for (Player player : holdingPlayers) {
+        for (Player player : holdingPlayers.keySet()) {
             if (!cooldownMap.isOnCooldown(player.getUniqueId())) {
                 offCooldownMsg.send(player);
                 if (!this.charmAnimations.isEmpty()) {
@@ -147,16 +157,21 @@ public abstract class CharmEffect implements Listener {
      */
     private void tickAffectedPlayers() {
         Set<Player> newAffectedPlayers = new HashSet<>();
-        for (Player player : holdingPlayers) {
+        for (Player player : holdingPlayers.keySet()) {
             if (!isEffectActive(player))
                 continue;
 
             Set<Player> inRange = getAffectedPlayers(player);
+            ConditionContext context = new ConditionContext(player, inRange, -1);
+            if (!testCharmConditions(context, true))
+                continue;
+
             for (CharmAnimation animation : this.charmAnimations) {
                 animation.onTick(player, inRange);
             }
             newAffectedPlayers.addAll(inRange);
         }
+
 
         // Loop through all the new players and try to either start affecting them, or stop affecting them.
         for (Player player : newAffectedPlayers) {
@@ -196,7 +211,7 @@ public abstract class CharmEffect implements Listener {
     }
 
     public final void markPlayerHeld(Player player) {
-        this.holdingPlayers.add(player);
+        this.holdingPlayers.put(player, Bukkit.getCurrentTick());
         this.onStartHolding(player);
         this.tickAffectedPlayers();
     }
@@ -214,7 +229,7 @@ public abstract class CharmEffect implements Listener {
      * @param player the player.
      */
     public final void playerQuit(Player player) {
-        if (this.holdingPlayers.remove(player)) {
+        if (this.holdingPlayers.remove(player) != null) {
             this.stopPlayerHold(player);
         }
 
@@ -326,13 +341,32 @@ public abstract class CharmEffect implements Listener {
     }
 
     /**
+     * Tests all charm conditions.
+     *
+     * @param context the context.
+     * @param verbose if true, sends a fail message.
+     * @return if all charm conditions passed.
+     */
+    public boolean testCharmConditions(ConditionContext context, boolean verbose) {
+        for (CharmCondition charmCondition : charmConditions) {
+            if (!charmCondition.test(context)) {
+                if (verbose && charmCondition.getFailedMessage() != null) {
+                    charmCondition.getFailedMessage().send(context.holder());
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Checks if the given player is holding a charm with this effect.
      *
      * @param player the player.
      * @return if they're holding this charm.
      */
     public boolean isHoldingCharm(Player player) {
-        return this.holdingPlayers.contains(player);
+        return this.holdingPlayers.containsKey(player);
     }
 
     /**
