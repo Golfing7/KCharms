@@ -1,22 +1,14 @@
 package com.golfing8.kcharm.module.animation;
 
-import com.cryptomorin.xseries.XMaterial;
-import com.golfing8.kcommon.config.ConfigEntry;
 import com.golfing8.kcommon.config.ConfigTypeRegistry;
 import com.golfing8.kcommon.config.adapter.ConfigPrimitive;
-import com.golfing8.kcommon.util.MS;
+import com.golfing8.shade.com.cryptomorin.xseries.XMaterial;
 import lombok.Getter;
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
-import org.bukkit.entity.Player;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * An animation that spawns a block display which rides the player's head.
