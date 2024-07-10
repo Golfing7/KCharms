@@ -2,6 +2,7 @@ import org.gradle.api.credentials.PasswordCredentials
 
 plugins {
     id("java")
+    id("com.github.johnrengelman.shadow") version("7.1.2")
 }
 
 group = "com.golfing8"
@@ -39,14 +40,18 @@ dependencies {
 
 val deployDirectory = "C:\\Users\\Miner\\Desktop\\Server-1.20.2\\plugins"
 tasks.create("deploy") {
-    dependsOn(tasks.jar)
+    dependsOn(tasks.build)
 
     doFirst {
-        val outputFile = tasks.getByName("jar").outputs.files.first()
+        val outputFile = tasks.getByName("shadowJar").outputs.files.first()
         val targetFile = File(deployDirectory, "KCharms-1.0.jar")
 
         outputFile.copyTo(targetFile, overwrite = true)
     }
+}
+
+tasks.build {
+    dependsOn(tasks.shadowJar)
 }
 
 tasks.test {
