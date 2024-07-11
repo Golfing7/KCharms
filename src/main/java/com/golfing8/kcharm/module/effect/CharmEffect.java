@@ -99,14 +99,24 @@ public abstract class CharmEffect implements Listener {
         if (section.isConfigurationSection("animations")) {
             var animationSection = section.getConfigurationSection("animations");
             for (String subKey : animationSection.getKeys(false)) {
-                this.charmAnimations.add(CharmAnimationType.fromConfig(animationSection.getConfigurationSection(subKey)));
+                // The user is trying to delegate here.
+                if (animationSection.isString(subKey)) {
+                    this.charmAnimations.add(CharmAnimationType.fromConfig(animationSection.getRoot().getConfigurationSection(animationSection.getString(subKey))));
+                } else {
+                    this.charmAnimations.add(CharmAnimationType.fromConfig(animationSection.getConfigurationSection(subKey)));
+                }
             }
         }
 
         if (section.isConfigurationSection("conditions")) {
             var conditionSection = section.getConfigurationSection("conditions");
             for (String subKey : conditionSection.getKeys(false)) {
-                this.charmConditions.add(CharmConditionType.fromConfig(conditionSection.getConfigurationSection(subKey)));
+                // The user is trying to delegate here.
+                if (conditionSection.isString(subKey)) {
+                    this.charmConditions.add(CharmConditionType.fromConfig(conditionSection.getRoot().getConfigurationSection(conditionSection.getString(subKey))));
+                } else {
+                    this.charmConditions.add(CharmConditionType.fromConfig(conditionSection.getConfigurationSection(subKey)));
+                }
             }
         }
     }
@@ -203,6 +213,9 @@ public abstract class CharmEffect implements Listener {
      */
     public Set<Player> getAffectedPlayers(Player player) {
         Set<Player> all = new HashSet<>();
+        if (effectiveSelectionPredicate.test(player, player)) {
+            all.add(player);
+        }
         for (Player other : player.getLocation().getNearbyEntitiesByType(Player.class, effectiveRange)) {
             if (effectiveSelectionPredicate.test(player, other))
                 all.add(other);

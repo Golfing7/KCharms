@@ -1,0 +1,26 @@
+charms:
+  speed-1:
+    effects:
+      - speed-low
+    item:
+      type: PAPER
+      name: '&aSpeed Charm I'
+  speed-2:
+    effects:
+      - speed-high
+    item:
+      type: PAPER
+      name: '&aSpeed Charm II'
+  strength-3:
+    effects:
+      - strength-high
+    item:
+      type: PAPER
+      name: '&cStrength Charm III'
+  attribute-mod:
+    effects:
+      - attribute-speed-high-active
+    item:
+      type: PAPER
+      name: '&aAttribute Charm I'
+allow-main-hand-charms: false

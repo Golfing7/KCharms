@@ -1,0 +1,5 @@
+type: ATTRIBUTE
+modifiers:
+  GENERIC_KNOCKBACK_RESISTANCE:
+    operation: ADD_NUMBER
+    number: 0.01

@@ -1,0 +1,6 @@
+type: DAMAGE_RESISTANCE
+# Deal 95% of the original damage
+damage-modifier: 0.95
+# To only fall damage. You can leave this section out to apply it globally.
+causes:
+  - FALL

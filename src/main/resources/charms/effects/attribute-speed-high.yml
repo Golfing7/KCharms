@@ -1,0 +1,5 @@
+type: ATTRIBUTE
+modifiers:
+  GENERIC_MOVEMENT_SPEED:
+    operation: ADD_NUMBER
+    number: 0.1

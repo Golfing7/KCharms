@@ -4,6 +4,8 @@ import com.golfing8.kcharm.module.cmd.CharmCommand;
 import com.golfing8.kcharm.module.effect.CharmEffect;
 import com.golfing8.kcharm.module.effect.CharmEffectType;
 import com.golfing8.kcharm.module.struct.Charm;
+import com.golfing8.kcommon.config.commented.Configuration;
+import com.golfing8.kcommon.config.commented.MConfiguration;
 import com.golfing8.kcommon.config.generator.Conf;
 import com.golfing8.kcommon.module.Module;
 import com.golfing8.kcommon.module.ModuleInfo;
@@ -70,11 +72,10 @@ public class CharmModule extends Module {
         this.typeToCharm = new HashMap<>();
         this.charms = new HashMap<>();
         this.charmEffects = new HashMap<>();
-        ConfigurationSection effectSection = getMainConfig().getConfigurationSection("charm-effects");
-        for (String charmEffect : effectSection.getKeys(false)) {
-            CharmEffect effect = CharmEffectType.fromConfig(effectSection.getConfigurationSection(charmEffect));
+        for (Configuration configuration : loadConfigGroup("effects")) {
+            CharmEffect effect = CharmEffectType.fromConfig(configuration);
             addSubListener(effect);
-            this.charmEffects.put(charmEffect, effect);
+            this.charmEffects.put(configuration.getFileNameNoExtension(), effect);
         }
 
         ConfigurationSection charmSection = getMainConfig().getConfigurationSection("charms");
