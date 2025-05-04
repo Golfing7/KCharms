@@ -13,11 +13,6 @@ repositories {
     mavenLocal()
 
     maven("https://repo.papermc.io/repository/maven-public/")
-
-    maven {
-        name = "luxiousFactions"
-        url = uri("https://nexus.luxiouslabs.net/public/")
-    }
 }
 
 java {
@@ -30,9 +25,6 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
-    implementation("com.kamikazejam:FactionIntegrations:2.1.2") {
-        isTransitive = false
-    }
     compileOnly("org.projectlombok:lombok:1.18.24")
     compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
     compileOnly(group = "com.golfing8", name = "KCommon", version = "1.0").isChanging = true

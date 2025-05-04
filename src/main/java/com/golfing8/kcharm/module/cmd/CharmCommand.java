@@ -19,9 +19,9 @@ public class CharmCommand extends MCommand<CharmModule> {
     }, (ctx) -> {
         CharmModule module = CharmModule.get();
         return module.getCharms().containsKey(ctx.getArgument());
-    }, (str) -> {
+    }, (ctx) -> {
         CharmModule module = CharmModule.get();
-        return module.getCharms().get(str);
+        return module.getCharms().get(ctx.getArgument());
     });
 
     @Override
