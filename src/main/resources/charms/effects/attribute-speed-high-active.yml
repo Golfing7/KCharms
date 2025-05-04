@@ -1,37 +1,37 @@
-    type: ATTRIBUTE
-    active:
-      cooldown-message:
-        actionbar: '&8[ {PROGRESS_BAR} &8]'
-      off-cooldown-message:
-        actionbar: '&aReady to use!'
-      duration: 40
-      cooldown-length: 60
-    modifiers:
-      # All bukkit attributes work here.
-      GENERIC_MOVEMENT_SPEED:
-        operation: ADD_NUMBER
-        number: 0.5
-    # Animations get applied to players who are affected.
-    animations:
-      # Displays a knight skull next to the player's head.
-      bd-1:
-        type: ITEM_DISPLAY
-        translation: '0.65:0:0'
-        # The item display will match the player's yaw.
-        match-player-yaw: true
-        item:
-          type: PLAYER_HEAD
-          skull-texture: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzM0NTJiOThhYjlhODhkMTc1N2YwMzJjMDcyYWY4MWNmYTM1ZGRiNDc5NDU4NTkxNDc4MTFiY2RjZmQ5ODcxZSJ9fX0='
-        left-rotation:
-          angle: 180
-          vector: '0:1:0'
-      bd-2:
-        type: ITEM_DISPLAY
-        translation: '-0.65:0:0'
-        match-player-yaw: true
-        item:
-          type: PLAYER_HEAD
-          skull-texture: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzM0NTJiOThhYjlhODhkMTc1N2YwMzJjMDcyYWY4MWNmYTM1ZGRiNDc5NDU4NTkxNDc4MTFiY2RjZmQ5ODcxZSJ9fX0='
-        left-rotation:
-          angle: 180
-          vector: '0:1:0'
+type: ATTRIBUTE
+active:
+  cooldown-message:
+    actionbar: '&8[ {PROGRESS_BAR} &8]'
+  off-cooldown-message:
+    actionbar: '&aReady to use!'
+  duration: 40
+  cooldown-length: 60
+modifiers:
+  # All bukkit attributes work here.
+  GENERIC_MOVEMENT_SPEED:
+    operation: ADD_NUMBER
+    number: 0.5
+# Animations get applied to players who are affected.
+animations:
+  # Displays a knight skull next to the player's head.
+  bd-1:
+    type: ITEM_DISPLAY
+    translation: '0.65:0:0'
+    # The item display will match the player's yaw.
+    match-player-yaw: true
+    item:
+      type: PLAYER_HEAD
+      skull-texture: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzM0NTJiOThhYjlhODhkMTc1N2YwMzJjMDcyYWY4MWNmYTM1ZGRiNDc5NDU4NTkxNDc4MTFiY2RjZmQ5ODcxZSJ9fX0='
+    left-rotation:
+      angle: 180
+      vector: '0:1:0'
+  bd-2:
+    type: ITEM_DISPLAY
+    translation: '-0.65:0:0'
+    match-player-yaw: true
+    item:
+      type: PLAYER_HEAD
+      skull-texture: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzM0NTJiOThhYjlhODhkMTc1N2YwMzJjMDcyYWY4MWNmYTM1ZGRiNDc5NDU4NTkxNDc4MTFiY2RjZmQ5ODcxZSJ9fX0='
+    left-rotation:
+      angle: 180
+      vector: '0:1:0'

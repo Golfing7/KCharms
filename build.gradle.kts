@@ -30,7 +30,7 @@ dependencies {
     compileOnly(group = "com.golfing8", name = "KCommon", version = "1.0").isChanging = true
 }
 
-val deployDirectory = "C:\\Users\\Miner\\Desktop\\Server-1.20.2\\plugins"
+val deployDirectory = "/home/andrew/Servers/Server-1.21.1/plugins"
 tasks.create("deploy") {
     dependsOn(tasks.build)
 
