@@ -3,6 +3,8 @@ package com.golfing8.kcharm.module;
 import com.golfing8.kcharm.module.cmd.CharmCommand;
 import com.golfing8.kcharm.module.effect.CharmEffect;
 import com.golfing8.kcharm.module.effect.CharmEffectType;
+import com.golfing8.kcharm.module.effect.selection.CharmEffectSelectionManager;
+import com.golfing8.kcharm.module.effect.selection.CharmEffectSelector;
 import com.golfing8.kcharm.module.struct.Charm;
 import com.golfing8.kcommon.config.commented.Configuration;
 import com.golfing8.kcommon.config.commented.MConfiguration;
@@ -38,6 +40,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Charms are items that players can hold in their offhand which give them
@@ -64,14 +67,18 @@ public class CharmModule extends Module {
     @Getter
     private Map<String, CharmEffect> charmEffects;
 
+    @Getter
+    private CharmEffectSelectionManager charmEffectSelectionManager;
+
     /** Used to prevent players from accidentally activating abilities */
-    private CooldownMap cantActivateAbilities = new CooldownMap();
+    private CooldownMap<UUID> cantActivateAbilities = new CooldownMap<>();
 
     @Override
     public void onEnable() {
         this.typeToCharm = new HashMap<>();
         this.charms = new HashMap<>();
         this.charmEffects = new HashMap<>();
+        this.charmEffectSelectionManager = new CharmEffectSelectionManager();
         for (Configuration configuration : loadConfigGroup("effects")) {
             CharmEffect effect = CharmEffectType.fromConfig(configuration);
             addSubListener(effect);
@@ -94,6 +101,20 @@ public class CharmModule extends Module {
                 }
             }
         }
+
+        // Register a task to garbage collect abilities that shouldn't be applied.
+        addTask(() -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                List<Charm> heldCharms = getHeldCharms(player);
+                Set<CharmEffect> actualEffects = heldCharms.stream().flatMap(charm -> charm.charmEffects().stream()).collect(Collectors.toSet());
+
+                for (CharmEffect effect : this.charmEffects.values()) {
+                    if (effect.isHoldingCharm(player) && !actualEffects.contains(effect)) {
+                        effect.stopPlayerHold(player);
+                    }
+                }
+            }
+        }).startTimer(0, 20);
     }
 
     @Override

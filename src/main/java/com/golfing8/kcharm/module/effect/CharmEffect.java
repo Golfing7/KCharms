@@ -7,10 +7,10 @@ import com.golfing8.kcharm.module.animation.CharmAnimationType;
 import com.golfing8.kcharm.module.condition.CharmCondition;
 import com.golfing8.kcharm.module.condition.CharmConditionType;
 import com.golfing8.kcharm.module.condition.ConditionContext;
+import com.golfing8.kcharm.module.effect.selection.CharmEffectSelection;
 import com.golfing8.kcommon.config.lang.Message;
 import com.golfing8.kcommon.struct.map.CooldownMap;
 import com.golfing8.kcommon.util.ProgressBar;
-import com.google.common.base.Predicates;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,7 +24,6 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 /**
  * Defines an effect that a charm has.
@@ -82,8 +81,14 @@ public abstract class CharmEffect implements Listener {
         // Compose the predicate
         this.effectiveSelectionPredicate = (p1, p2) -> {
             for (var type : effectSelections) {
-                if (type.getApplicablePredicate().test(p1, p2))
+                // This code is cursed.
+                if (switch (type) {
+                    case SELF -> module.getCharmEffectSelectionManager().getSelector().isSelf(p1, p2);
+                    case TEAM -> module.getCharmEffectSelectionManager().getSelector().isAlly(p1, p2);
+                    case ENEMY -> module.getCharmEffectSelectionManager().getSelector().isEnemy(p1, p2);
+                } ) {
                     return true;
+                }
             }
             return false;
         };

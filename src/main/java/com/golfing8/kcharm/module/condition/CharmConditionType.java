@@ -13,6 +13,7 @@ public enum CharmConditionType {
     AFFECTED_PLAYERS(CharmConditionAffectedPlayers::new),
     HELD_LENGTH(CharmConditionHeldLength::new),
     IN_REGION(CharmConditionInRegion::new),
+    PERMISSION()
     ;
 
     final Function<ConfigurationSection, CharmCondition> constructor;
