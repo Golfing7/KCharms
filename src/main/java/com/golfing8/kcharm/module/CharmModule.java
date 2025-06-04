@@ -4,18 +4,15 @@ import com.golfing8.kcharm.module.cmd.CharmCommand;
 import com.golfing8.kcharm.module.effect.CharmEffect;
 import com.golfing8.kcharm.module.effect.CharmEffectType;
 import com.golfing8.kcharm.module.effect.selection.CharmEffectSelectionManager;
-import com.golfing8.kcharm.module.effect.selection.CharmEffectSelector;
 import com.golfing8.kcharm.module.struct.Charm;
 import com.golfing8.kcommon.config.commented.Configuration;
-import com.golfing8.kcommon.config.commented.MConfiguration;
 import com.golfing8.kcommon.config.generator.Conf;
 import com.golfing8.kcommon.module.Module;
 import com.golfing8.kcommon.module.ModuleInfo;
-import com.golfing8.kcommon.module.ModuleTask;
 import com.golfing8.kcommon.struct.map.CooldownMap;
-import de.tr7zw.kcommon.nbtapi.NBTCompound;
-import de.tr7zw.kcommon.nbtapi.NBTItem;
+import de.tr7zw.kcommon.nbtapi.NBT;
 import de.tr7zw.kcommon.nbtapi.NBTType;
+import de.tr7zw.kcommon.nbtapi.iface.ReadableNBT;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -71,7 +68,7 @@ public class CharmModule extends Module {
     private CharmEffectSelectionManager charmEffectSelectionManager;
 
     /** Used to prevent players from accidentally activating abilities */
-    private CooldownMap<UUID> cantActivateAbilities = new CooldownMap<>();
+    private CooldownMap<UUID> cantActivateAbilities;
 
     @Override
     public void onEnable() {
@@ -79,6 +76,7 @@ public class CharmModule extends Module {
         this.charms = new HashMap<>();
         this.charmEffects = new HashMap<>();
         this.charmEffectSelectionManager = new CharmEffectSelectionManager();
+        this.cantActivateAbilities = new CooldownMap<>();
         for (Configuration configuration : loadConfigGroup("effects")) {
             CharmEffect effect = CharmEffectType.fromConfig(configuration);
             addSubListener(effect);
@@ -89,7 +87,7 @@ public class CharmModule extends Module {
         for (String charmID : charmSection.getKeys(false)) {
             Charm charm = Charm.fromConfig(charmSection.getConfigurationSection(charmID));
             this.charms.put(charmID, charm);
-            this.typeToCharm.computeIfAbsent(charm.charmItemFormat().getItemType().parseMaterial(), (k) -> new ArrayList<>()).add(charm);
+            this.typeToCharm.computeIfAbsent(charm.charmItemFormat().getItemType().get(), (k) -> new ArrayList<>()).add(charm);
         }
 
         this.addCommand(new CharmCommand());
@@ -151,11 +149,11 @@ public class CharmModule extends Module {
         if (!this.typeToCharm.containsKey(stack.getType()))
             return Collections.emptyList();
 
-        NBTItem nbtItem = new NBTItem(stack);
-        if (!nbtItem.hasTag(CHARM_ITEM_KEY, NBTType.NBTTagCompound))
+        ReadableNBT nbt = NBT.readNbt(stack);
+        if (!nbt.hasTag(CHARM_ITEM_KEY, NBTType.NBTTagCompound))
             return Collections.emptyList();
 
-        NBTCompound compound = nbtItem.getCompound(CHARM_ITEM_KEY);
+        ReadableNBT compound = nbt.getCompound(CHARM_ITEM_KEY);
         List<Charm> charms = new ArrayList<>();
         for (String str : compound.getKeys()) {
             if (!this.charms.containsKey(str)) // Filter dead IDs
@@ -362,10 +360,5 @@ public class CharmModule extends Module {
                 effect.markPlayerHeld(event.getPlayer());
             }
         }
-    }
-
-    @Override
-    public synchronized ModuleTask addTask(Runnable runnable) {
-        return super.addTask(runnable);
     }
 }

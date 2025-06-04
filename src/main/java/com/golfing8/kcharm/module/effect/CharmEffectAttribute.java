@@ -1,8 +1,11 @@
 package com.golfing8.kcharm.module.effect;
 
+import com.golfing8.kcharm.KCharms;
 import com.golfing8.kcharm.module.CharmModule;
 import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
@@ -28,8 +31,8 @@ public class CharmEffectAttribute extends CharmEffect {
         for (String type : modSection.getKeys(false)) {
             Attribute attribute;
             try {
-                attribute = Attribute.valueOf(type);
-            } catch (IllegalArgumentException exc) {
+                attribute = Registry.ATTRIBUTE.getOrThrow(NamespacedKey.minecraft(type));
+            } catch (NoSuchElementException exc) {
                 module.getPlugin().getLogger().warning("Attribute of type '%s' doesn't exist.".formatted(type));
                 continue;
             }
@@ -44,8 +47,8 @@ public class CharmEffectAttribute extends CharmEffect {
                 continue;
             }
 
-            UUID uuid = UUID.randomUUID();
-            AttributeModifier modifier = new AttributeModifier(uuid, uuid.toString(), number, operation);
+            NamespacedKey key = new NamespacedKey(KCharms.getInstance(), UUID.randomUUID().toString());
+            AttributeModifier modifier = new AttributeModifier(key, number, operation);
             attributeModifiers.computeIfAbsent(attribute, (k) -> new ArrayList<>()).add(modifier);
         }
     }
@@ -58,7 +61,7 @@ public class CharmEffectAttribute extends CharmEffect {
                 continue;
 
             for (AttributeModifier modifier : entry.getValue()) {
-                if (instance.getModifier(modifier.getUniqueId()) != null)
+                if (instance.getModifier(modifier.getKey()) != null)
                     continue;
 
                 instance.addTransientModifier(modifier);
@@ -74,7 +77,7 @@ public class CharmEffectAttribute extends CharmEffect {
                 continue;
 
             for (AttributeModifier modifier : entry.getValue()) {
-                if (instance.getModifier(modifier.getUniqueId()) == null)
+                if (instance.getModifier(modifier.getKey()) == null)
                     continue;
 
                 instance.removeModifier(modifier);
