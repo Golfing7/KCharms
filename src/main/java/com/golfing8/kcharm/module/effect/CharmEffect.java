@@ -48,7 +48,7 @@ public abstract class CharmEffect implements Listener {
     /** The animations that will play with this effect */
     private final List<CharmAnimation> charmAnimations = new ArrayList<>();
     /** Stores cooldowns for this charm */
-    protected final CooldownMap cooldownMap = new CooldownMap(KCharms.getInstance());
+    protected final CooldownMap<UUID> cooldownMap = new CooldownMap<>(KCharms.getInstance());
     /** The length in ticks the cooldown should last */
     private int cooldownLengthTicks = -1;
     /** How long the effect *can* work */

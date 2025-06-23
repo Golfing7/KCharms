@@ -16,7 +16,7 @@ repositories {
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
 dependencies {
@@ -30,7 +30,7 @@ dependencies {
     compileOnly(group = "com.golfing8", name = "KCommon", version = "1.0").isChanging = true
 }
 
-val deployDirectory = "/home/andrew/Servers/Server-1.21.4/plugins"
+val deployDirectory = "/home/andrew/Servers/Server-1.21.5/plugins"
 tasks.create("deploy") {
     dependsOn(tasks.build)
 

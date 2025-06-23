@@ -8,7 +8,7 @@ active:
   cooldown-length: 60
 modifiers:
   # All bukkit attributes work here.
-  GENERIC_MOVEMENT_SPEED:
+  movement_speed:
     operation: ADD_NUMBER
     number: 0.5
 # Animations get applied to players who are affected.
