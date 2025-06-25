@@ -1,5 +1,6 @@
 package com.golfing8.kcharm.module.animation;
 
+import com.golfing8.kcommon.ComponentUtils;
 import com.golfing8.kcommon.util.MS;
 import lombok.Getter;
 import org.bukkit.Color;
@@ -45,7 +46,7 @@ public class CharmAnimationTextDisplay extends CharmAnimationDisplay {
         super.adaptDisplay(display);
 
         TextDisplay textDisplay = (TextDisplay) display;
-        textDisplay.setText(MS.parseSingle(text));
+        textDisplay.text(ComponentUtils.toComponent(MS.parseSingle(text)));
         textDisplay.setLineWidth(lineWidth);
         textDisplay.setBackgroundColor(bgColor);
         textDisplay.setTextOpacity(opacity);

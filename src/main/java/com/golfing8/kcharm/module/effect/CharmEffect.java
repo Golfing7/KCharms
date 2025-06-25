@@ -172,17 +172,17 @@ public abstract class CharmEffect implements Listener {
      */
     private void tickAffectedPlayers() {
         Set<Player> newAffectedPlayers = new HashSet<>();
-        for (Player player : holdingPlayers.keySet()) {
-            if (!isEffectActive(player))
+        for (var entry : holdingPlayers.entrySet()) {
+            if (!isEffectActive(entry.getKey()))
                 continue;
 
-            Set<Player> inRange = getAffectedPlayers(player);
-            ConditionContext context = new ConditionContext(player, inRange, -1);
+            Set<Player> inRange = getAffectedPlayers(entry.getKey());
+            ConditionContext context = new ConditionContext(entry.getKey(), inRange, entry.getValue());
             if (!testCharmConditions(context, true))
                 continue;
 
             for (CharmAnimation animation : this.charmAnimations) {
-                animation.onTick(player, inRange);
+                animation.onTick(entry.getKey(), inRange);
             }
             newAffectedPlayers.addAll(inRange);
         }
