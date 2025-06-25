@@ -54,3 +54,27 @@ animations: {}
 # This section is optional. Conditions are explained more on the conditions page.
 conditions: {}
 ```
+
+## Potion Immunity Configuration
+```yaml
+type: POTION_IMMUNITY
+immunities:
+  # Immune to poison of this level or higher
+  POISON: 1
+```
+
+## Damage Resistance Configuration
+```yaml
+type: DAMAGE_RESISTANCE
+damage-modifier: 0.95
+```
+
+## Attribute Configuration
+```yaml
+type: ATTRIBUTE
+modifiers:
+  ATTACK_DAMAGE:
+    number: 1
+    # Can be ADD_NUMBER, ADD_SCALAR, MULTIPLY_SCALAR_1
+    operation: ADD_NUMBER
+```
