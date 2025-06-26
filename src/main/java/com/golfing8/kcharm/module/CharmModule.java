@@ -103,7 +103,7 @@ public class CharmModule extends Module {
         // Register a task to garbage collect abilities that shouldn't be applied.
         addTask(() -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                List<Charm> heldCharms = getHeldCharms(player);
+                Set<Charm> heldCharms = getHeldCharms(player);
                 Set<CharmEffect> actualEffects = heldCharms.stream().flatMap(charm -> charm.charmEffects().stream()).collect(Collectors.toSet());
 
                 for (CharmEffect effect : this.charmEffects.values()) {
@@ -128,8 +128,8 @@ public class CharmModule extends Module {
      * @param player the player.
      * @return the charms that they're holding.
      */
-    public List<Charm> getHeldCharms(Player player) {
-        List<Charm> charms = new ArrayList<>();
+    public Set<Charm> getHeldCharms(Player player) {
+        Set<Charm> charms = new LinkedHashSet<>();
         for (ItemStack stack : getCharmItems(player)) {
             charms.addAll(getCharms(stack));
         }
@@ -191,19 +191,7 @@ public class CharmModule extends Module {
         if (allowMainHandCharms)
             return;
 
-        ItemStack mainHandItem = event.getMainHandItem();
-        for (Charm charm : getCharms(mainHandItem)) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.stopPlayerHold(event.getPlayer());
-            }
-        }
-
-        ItemStack offHandItem = event.getOffHandItem();
-        for (Charm charm : getCharms(offHandItem)) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.markPlayerHeld(event.getPlayer());
-            }
-        }
+        updateHeldCharms(event.getPlayer(), event.getMainHandItem(), event.getOffHandItem());
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -211,19 +199,7 @@ public class CharmModule extends Module {
         if (!allowMainHandCharms)
             return;
 
-        ItemStack oldItem = event.getPlayer().getInventory().getItem(event.getPreviousSlot());
-        for (Charm charm : getCharms(oldItem)) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.stopPlayerHold(event.getPlayer());
-            }
-        }
-
-        ItemStack newItem = event.getPlayer().getInventory().getItem(event.getNewSlot());
-        for (Charm charm : getCharms(newItem)) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.markPlayerHeld(event.getPlayer());
-            }
-        }
+        updateHeldCharms(event.getPlayer(), event.getPlayer().getInventory().getItem(event.getPreviousSlot()), event.getPlayer().getInventory().getItem(event.getNewSlot()));
     }
 
     private static ItemStack getCursoredItem(InventoryClickEvent event) {
@@ -233,25 +209,17 @@ public class CharmModule extends Module {
     // Off-hand click listener
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onOffhandClick(InventoryClickEvent event) {
-        if (event.getClickedInventory() == null || event.getSlot() != 40 || !(event.getWhoClicked() instanceof Player player))
+        if (event.getClickedInventory() == null || !(event.getWhoClicked() instanceof Player player))
             return;
 
         if (event.getClickedInventory().getType() != InventoryType.PLAYER)
             return;
 
-        ItemStack current = event.getCurrentItem();
-        for (Charm charm : getCharms(current)) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.stopPlayerHold(player);
-            }
-        }
-
-        ItemStack cursor = getCursoredItem(event);
-        for (Charm charm : getCharms(cursor)) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.markPlayerHeld(player);
-            }
-        }
+        // Update the held charms of the player.
+        addTask(() -> {
+            Set<Charm> allHeldCharms = getHeldCharms(player);
+            updateHeldCharms(player, allHeldCharms);
+        }).start();
     }
 
     // Off-hand click listener
@@ -267,28 +235,6 @@ public class CharmModule extends Module {
         for (Charm charm : getCharms(cursor)) {
             for (CharmEffect effect : charm.charmEffects()) {
                 effect.markPlayerHeld(player);
-            }
-        }
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onMainHandClick(InventoryClickEvent event) {
-        if (!allowMainHandCharms || !(event.getWhoClicked() instanceof Player player))
-            return;
-
-        if (event.getSlot() == event.getWhoClicked().getInventory().getHeldItemSlot()) {
-            List<Charm> currentCharms = getCharms(event.getCurrentItem());
-            for (Charm charm : currentCharms) {
-                for (CharmEffect effect : charm.charmEffects()) {
-                    effect.stopPlayerHold(player);
-                }
-            }
-
-            List<Charm> cursorCharms = getCharms(getCursoredItem(event));
-            for (Charm charm : cursorCharms) {
-                for (CharmEffect effect : charm.charmEffects()) {
-                    effect.markPlayerHeld(player);
-                }
             }
         }
     }
@@ -358,6 +304,40 @@ public class CharmModule extends Module {
         for (Charm charm : getHeldCharms(event.getPlayer())) {
             for (CharmEffect effect : charm.charmEffects()) {
                 effect.markPlayerHeld(event.getPlayer());
+            }
+        }
+    }
+
+    private void updateHeldCharms(Player player, ItemStack oldItem, ItemStack newItem) {
+        List<Charm> oldCharms = getCharms(oldItem);
+        for (Charm charm : oldCharms) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.stopPlayerHold(player);
+            }
+        }
+
+        List<Charm> newCharms = getCharms(newItem);
+        for (Charm charm : newCharms) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.markPlayerHeld(player);
+            }
+        }
+    }
+
+    private void updateHeldCharms(Player player, Set<Charm> heldCharmEffects) {
+        // Remove all old effects.
+        for (Charm charm : this.charms.values()) {
+            if (heldCharmEffects.contains(charm))
+                continue;
+
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.stopPlayerHold(player);
+            }
+        }
+
+        for (Charm charm : heldCharmEffects) {
+            for (CharmEffect effect : charm.charmEffects()) {
+                effect.markPlayerHeld(player);
             }
         }
     }
