@@ -15,6 +15,7 @@ public enum CharmEffectType {
     DAMAGE_RESISTANCE(CharmEffectDamageResistance::new),
     POTION(CharmEffectPotion::new),
     POTION_IMMUNITY(CharmEffectPotionImmunity::new),
+    SET_FIRE(CharmEffectSetFire::new),
     ;
 
     /** Maps a config section to a loaded instance of a charm effect */
