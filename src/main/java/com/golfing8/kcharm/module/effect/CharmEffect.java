@@ -11,6 +11,7 @@ import com.golfing8.kcharm.module.effect.selection.CharmEffectSelection;
 import com.golfing8.kcommon.config.lang.Message;
 import com.golfing8.kcommon.struct.map.CooldownMap;
 import com.golfing8.kcommon.util.ProgressBar;
+import com.golfing8.kcommon.util.StringUtil;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
@@ -162,7 +163,7 @@ public abstract class CharmEffect implements Listener {
             if (this.cooldownMsg != null && !isEffectActive(player)) {
                 cooldownMsg.send(player,
                         "PROGRESS_BAR", ProgressBar.getProgressBar(cooldownLengthMS - currentCooldown, cooldownLengthMS, ProgressBar.BOX_UNICODE, 10),
-                        "TIME_LEFT", DURATION_FORMAT.format(currentCooldown / 20F));
+                        "TIME_LEFT", StringUtil.timeFormatted((int) (currentCooldown / 20), true));
             }
         }
     }
