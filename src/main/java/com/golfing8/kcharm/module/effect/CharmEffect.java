@@ -97,7 +97,7 @@ public abstract class CharmEffect implements Listener {
             this.useMsg = new Message(section.get("active.use-message"));
             this.cooldownMsg = new Message(section.get("active.cooldown-message"));
             this.offCooldownMsg = new Message(section.get("active.off-cooldown-message"));
-            this.effectDurationTicks = section.getInt("active.duration");
+            this.effectDurationTicks = section.getInt("active.duration", 1);
             this.cooldownLengthTicks = section.getInt("active.cooldown-length");
         }
 
