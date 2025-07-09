@@ -57,6 +57,8 @@ public abstract class CharmEffect implements Listener {
     /** The range of efficacy taken from the player's feet */
     @Setter
     private double effectiveRange = 0.0D;
+    /** Sent to the user of a charm while they're holding. */
+    private Message holdingMsg;
     /** Sent to the user of a charm when it's activated */
     private Message useMsg;
     /** Sent to holders when they're on cooldown, useful for action bars */
@@ -93,6 +95,8 @@ public abstract class CharmEffect implements Listener {
             }
             return false;
         };
+
+        this.holdingMsg = new Message(section.get("holding-message"));
 
         if (section.isConfigurationSection("active")) {
             this.useMsg = new Message(section.get("active.use-message"));
@@ -182,6 +186,8 @@ public abstract class CharmEffect implements Listener {
             if (!testCharmConditions(context, true))
                 continue;
 
+            // Send the message to the player.
+            holdingMsg.send(entry.getKey());
             for (CharmAnimation animation : this.charmAnimations) {
                 animation.onTick(entry.getKey(), inRange);
             }
