@@ -8,6 +8,7 @@ import com.golfing8.kcharm.module.condition.CharmCondition;
 import com.golfing8.kcharm.module.condition.CharmConditionType;
 import com.golfing8.kcharm.module.condition.ConditionContext;
 import com.golfing8.kcharm.module.effect.selection.CharmEffectSelection;
+import com.golfing8.kcommon.NMS;
 import com.golfing8.kcommon.config.lang.Message;
 import com.golfing8.kcommon.struct.map.CooldownMap;
 import com.golfing8.kcommon.util.ProgressBar;
@@ -25,6 +26,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 /**
  * Defines an effect that a charm has.
@@ -57,6 +59,8 @@ public abstract class CharmEffect implements Listener {
     /** The range of efficacy taken from the player's feet */
     @Setter
     private double effectiveRange = 0.0D;
+    /** If the affected players are requried to be vulnerable. */
+    private boolean requireVulnerable;
     /** Sent to the user of a charm while they're holding. */
     private Message holdingMsg;
     /** Sent to the user of a charm when it's activated */
@@ -97,6 +101,7 @@ public abstract class CharmEffect implements Listener {
         };
 
         this.holdingMsg = new Message(section.get("holding-message"));
+        this.requireVulnerable = section.getBoolean("require-vulnerable", false);
 
         if (section.isConfigurationSection("active")) {
             this.useMsg = new Message(section.get("active.use-message"));
@@ -233,7 +238,7 @@ public abstract class CharmEffect implements Listener {
             if (effectiveSelectionPredicate.test(player, other))
                 all.add(other);
         }
-        return all;
+        return all.stream().filter(p -> !this.requireVulnerable || NMS.getTheNMS().getWGHook().canBeDamaged(p)).collect(Collectors.toSet());
     }
 
     public final void markPlayerHeld(Player player) {
