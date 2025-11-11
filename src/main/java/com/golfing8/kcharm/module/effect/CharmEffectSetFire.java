@@ -19,7 +19,7 @@ public class CharmEffectSetFire extends CharmEffect {
 
     public CharmEffectSetFire(ConfigurationSection section) {
         super(section);
-        Preconditions.checkArgument(section.isInt("fire-ticks"), "Must contain a list `fire-ticks`");
+        Preconditions.checkArgument(section.isInt("fire-ticks"), "Must contain an int `fire-ticks`");
 
         this.fireTicks = section.getInt("fire-ticks", 200);
     }
