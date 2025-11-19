@@ -71,7 +71,7 @@ public class CharmEffectVeinMiner extends CharmEffect {
         if (!isEffectActive(event.getPlayer()))
             return;
 
-        Queue<Block> blocks = collectBlocksInVein(type, origin);
+        Set<Block> blocks = collectBlocksInVein(type, origin);
         try {
             silenceEvent = true;
             capturedXp = 0;
@@ -95,19 +95,20 @@ public class CharmEffectVeinMiner extends CharmEffect {
         }
     }
 
-    private Queue<Block> collectBlocksInVein(XMaterial matchType, Block origin) {
+    private Set<Block> collectBlocksInVein(XMaterial matchType, Block origin) {
         Set<Block> blocks = new HashSet<>();
         Queue<Block> blocksToHandle = new ArrayDeque<>();
         blocksToHandle.add(origin);
         while (!blocksToHandle.isEmpty()) {
+            Block block = blocksToHandle.poll();
             for (BlockFace face : BlockFace.values()) {
                 if (blocks.size() >= maxBlocks)
-                    return blocksToHandle;
+                    return blocks;
 
                 if (face == BlockFace.SELF)
                     continue;
 
-                Block other = origin.getRelative(face);
+                Block other = block.getRelative(face);
                 if (blocks.contains(other) || XMaterial.matchXMaterial(other.getType()) != matchType)
                     continue;
 
@@ -115,6 +116,6 @@ public class CharmEffectVeinMiner extends CharmEffect {
                 blocksToHandle.add(other);
             }
         }
-        return blocksToHandle;
+        return blocks;
     }
 }
