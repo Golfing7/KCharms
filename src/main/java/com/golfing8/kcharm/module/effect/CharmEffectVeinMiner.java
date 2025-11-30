@@ -68,7 +68,7 @@ public class CharmEffectVeinMiner extends CharmEffect {
         if (!blockWhitelist.contains(type))
             return;
 
-        if (!isEffectActive(event.getPlayer()))
+        if (!isAffectedByCharm(event.getPlayer()))
             return;
 
         Set<Block> blocks = collectBlocksInVein(type, origin);
