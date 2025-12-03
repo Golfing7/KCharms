@@ -2,7 +2,6 @@ package com.golfing8.kcharm.module.effect;
 
 import com.golfing8.kcharm.KCharms;
 import com.google.common.base.Preconditions;
-import lombok.AllArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -26,8 +25,8 @@ public class CharmEffectPotionImmunity extends CharmEffect {
      */
     private final Map<PotionEffectType, Integer> potionEffectImmunities;
 
-    public CharmEffectPotionImmunity(ConfigurationSection section) {
-        super(section);
+    public CharmEffectPotionImmunity(String id, ConfigurationSection section) {
+        super(id, section);
         Preconditions.checkArgument(section.isConfigurationSection("immunities"), "Must contain a list `potion-effects`");
 
         potionEffectImmunities = new HashMap<>();

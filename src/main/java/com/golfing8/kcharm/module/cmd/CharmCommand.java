@@ -15,10 +15,10 @@ import com.golfing8.kcommon.command.argument.CommandArgument;
 public class CharmCommand extends MCommand<CharmModule> {
     static final CommandArgument<Charm> CHARM_ARGUMENT = new CommandArgument<>("A charm", (ctx) -> {
         CharmModule module = CharmModule.get();
-        return module.getCharms().keySet();
+        return module.getCharmEffects().keySet();
     }, (ctx) -> {
         CharmModule module = CharmModule.get();
-        return module.getCharms().containsKey(ctx.getArgument());
+        return module.getCharmEffects().containsKey(ctx.getArgument());
     }, (ctx) -> {
         CharmModule module = CharmModule.get();
         return module.getCharms().get(ctx.getArgument());

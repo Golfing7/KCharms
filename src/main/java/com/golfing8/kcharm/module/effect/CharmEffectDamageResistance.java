@@ -1,8 +1,6 @@
 package com.golfing8.kcharm.module.effect;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
-import lombok.AllArgsConstructor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,8 +19,8 @@ public class CharmEffectDamageResistance extends CharmEffect {
     /** The modifier of damage */
     private final double damageModifier;
 
-    public CharmEffectDamageResistance(ConfigurationSection section) {
-        super(section);
+    public CharmEffectDamageResistance(String id, ConfigurationSection section) {
+        super(id, section);
         Preconditions.checkArgument(section.isDouble("damage-modifier"), "Must contain 'damage-modifier'");
 
         this.damageModifier = section.getDouble("damage-modifier");

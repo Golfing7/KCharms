@@ -4,7 +4,6 @@ import com.golfing8.kcommon.NMS;
 import com.golfing8.kcommon.config.ConfigTypeRegistry;
 import com.golfing8.kcommon.config.adapter.ConfigPrimitive;
 import com.google.common.base.Preconditions;
-import lombok.AllArgsConstructor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -18,8 +17,8 @@ import java.util.List;
 public class CharmEffectPotion extends CharmEffect {
     private final List<PotionEffect> giveOnHold;
 
-    public CharmEffectPotion(ConfigurationSection section) {
-        super(section);
+    public CharmEffectPotion(String id, ConfigurationSection section) {
+        super(id, section);
         Preconditions.checkArgument(section.isList("potion-effects"), "Must contain a list `potion-effects`");
 
         this.giveOnHold = new ArrayList<>();

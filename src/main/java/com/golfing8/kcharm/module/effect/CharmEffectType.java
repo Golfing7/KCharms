@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -21,7 +22,7 @@ public enum CharmEffectType {
 
     /** Maps a config section to a loaded instance of a charm effect */
     @Getter
-    final Function<ConfigurationSection, CharmEffect> configLoader;
+    final BiFunction<String, ConfigurationSection, CharmEffect> configLoader;
 
     /**
      * Loads a charm effect from its given section.
@@ -29,7 +30,7 @@ public enum CharmEffectType {
      * @param section the section.
      * @return the effect.
      */
-    public static CharmEffect fromConfig(ConfigurationSection section) {
+    public static CharmEffect fromConfig(String id, ConfigurationSection section) {
         if (!section.isString("type"))
             throw new IllegalArgumentException("Type must be string. Was " + section.getString("type"));
 
@@ -40,6 +41,6 @@ public enum CharmEffectType {
             throw new IllegalArgumentException("Cannot load charm effect because '%s' type doesn't exist!".formatted(section.getString("type")));
         }
 
-        return type.getConfigLoader().apply(section);
+        return type.getConfigLoader().apply(id, section);
     }
 }

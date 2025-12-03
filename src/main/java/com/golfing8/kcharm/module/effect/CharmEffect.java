@@ -38,6 +38,8 @@ import java.util.stream.Collectors;
 public abstract class CharmEffect implements Listener {
     private static final NumberFormat DURATION_FORMAT = new DecimalFormat("###.#");
 
+    /** The internal identifier of this charm effect */
+    private final String id;
     /** All players who are currently holding this charm mapped to the tick they started holding it. */
     private final Map<Player, Integer> holdingPlayers = new HashMap<>();
     /** Contains all players who are currently under the effect of this charm. */
@@ -70,7 +72,9 @@ public abstract class CharmEffect implements Listener {
     /** Sent to holders when they're off cooldown */
     private Message offCooldownMsg;
 
-    public CharmEffect(ConfigurationSection section) {
+    public CharmEffect(String id, ConfigurationSection section) {
+        this.id = id;
+
         CharmModule module = CharmModule.get();
         module.addTask(this::tickAffectedPlayers).runTaskTimer(module.getPlugin(), 0, 20);
         module.addTask(this::tickCooldown).runTaskTimer(module.getPlugin(), 0, 2);

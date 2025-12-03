@@ -3,7 +3,6 @@ package com.golfing8.kcharm.module.effect;
 import com.golfing8.kcharm.KCharms;
 import com.golfing8.kcharm.module.CharmModule;
 import com.google.common.base.Preconditions;
-import lombok.AllArgsConstructor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
@@ -21,8 +20,8 @@ public class CharmEffectAttribute extends CharmEffect {
     /** Contains all attribute modifiers for certain attributes */
     private final Map<Attribute, List<AttributeModifier>> attributeModifiers;
 
-    public CharmEffectAttribute(ConfigurationSection section) {
-        super(section);
+    public CharmEffectAttribute(String id, ConfigurationSection section) {
+        super(id, section);
         Preconditions.checkArgument(section.isConfigurationSection("modifiers"), "Must contain 'modifiers' in config");
 
         CharmModule module = CharmModule.get();

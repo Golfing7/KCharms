@@ -3,6 +3,7 @@ import org.gradle.api.credentials.PasswordCredentials
 plugins {
     id("java")
     id("com.github.johnrengelman.shadow") version("7.1.2")
+    id("maven-publish")
 }
 
 group = "com.golfing8"
@@ -52,10 +53,18 @@ tasks.create("deploy") {
     }
 }
 
-tasks.build {
-    dependsOn(tasks.shadowJar)
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = project.group.toString()
+            artifactId = project.name
+            version = project.version.toString()
+
+            from(components["java"])
+        }
+    }
 }
 
-tasks.test {
-    useJUnitPlatform()
+tasks.build {
+    dependsOn(tasks.shadowJar)
 }

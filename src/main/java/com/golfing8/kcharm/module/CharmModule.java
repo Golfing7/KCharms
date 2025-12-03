@@ -10,12 +10,14 @@ import com.golfing8.kcommon.config.generator.Conf;
 import com.golfing8.kcommon.module.Module;
 import com.golfing8.kcommon.module.ModuleInfo;
 import com.golfing8.kcommon.struct.map.CooldownMap;
+import com.golfing8.kcommon.util.ItemUtil;
 import de.tr7zw.kcommon.nbtapi.NBT;
+import de.tr7zw.kcommon.nbtapi.NBTList;
 import de.tr7zw.kcommon.nbtapi.NBTType;
 import de.tr7zw.kcommon.nbtapi.iface.ReadableNBT;
+import de.tr7zw.kcommon.nbtapi.iface.ReadableNBTList;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -49,6 +51,7 @@ import java.util.stream.Collectors;
 )
 public class CharmModule extends Module {
     public static final String CHARM_ITEM_KEY = "kcharm-type";
+    public static final String CHARM_EFFECT_LIST = "kcharm-effects";
 
     @Getter
     @Conf("Allow main hand charms")
@@ -56,10 +59,6 @@ public class CharmModule extends Module {
     /** All loaded charms */
     @Getter
     private Map<String, Charm> charms;
-    /** A lookup map for finding charms faster */
-    @Getter
-    private Map<Material, List<Charm>> typeToCharm;
-
     /** Contains all the loaded charm effects by ID */
     @Getter
     private Map<String, CharmEffect> charmEffects;
@@ -72,13 +71,12 @@ public class CharmModule extends Module {
 
     @Override
     public void onEnable() {
-        this.typeToCharm = new HashMap<>();
         this.charms = new HashMap<>();
         this.charmEffects = new HashMap<>();
         this.charmEffectSelectionManager = new CharmEffectSelectionManager();
         this.cantActivateAbilities = new CooldownMap<>();
         for (Configuration configuration : loadConfigGroup("effects")) {
-            CharmEffect effect = CharmEffectType.fromConfig(configuration);
+            CharmEffect effect = CharmEffectType.fromConfig(configuration.getFileNameNoExtension(), configuration);
             addSubListener(effect);
             this.charmEffects.put(configuration.getFileNameNoExtension(), effect);
         }
@@ -87,24 +85,20 @@ public class CharmModule extends Module {
         for (String charmID : charmSection.getKeys(false)) {
             Charm charm = Charm.fromConfig(charmSection.getConfigurationSection(charmID));
             this.charms.put(charmID, charm);
-            this.typeToCharm.computeIfAbsent(charm.charmItemFormat().getItemType().get(), (k) -> new ArrayList<>()).add(charm);
         }
 
         this.addCommand(new CharmCommand());
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            for (Charm charm : getHeldCharms(player)) {
-                for (CharmEffect effect : charm.charmEffects()) {
-                    effect.markPlayerHeld(player);
-                }
+            for (CharmEffect effect : getHeldCharmEffects(player)) {
+                effect.markPlayerHeld(player);
             }
         }
 
         // Register a task to garbage collect abilities that shouldn't be applied.
         addTask(() -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                Set<Charm> heldCharms = getHeldCharms(player);
-                Set<CharmEffect> actualEffects = heldCharms.stream().flatMap(charm -> charm.charmEffects().stream()).collect(Collectors.toSet());
+                Set<CharmEffect> actualEffects = getHeldCharmEffects(player);
 
                 for (CharmEffect effect : this.charmEffects.values()) {
                     if (effect.isHoldingCharm(player) && !actualEffects.contains(effect)) {
@@ -128,10 +122,10 @@ public class CharmModule extends Module {
      * @param player the player.
      * @return the charms that they're holding.
      */
-    public Set<Charm> getHeldCharms(Player player) {
-        Set<Charm> charms = new LinkedHashSet<>();
+    public Set<CharmEffect> getHeldCharmEffects(Player player) {
+        Set<CharmEffect> charms = new LinkedHashSet<>();
         for (ItemStack stack : getCharmItems(player)) {
-            charms.addAll(getCharms(stack));
+            charms.addAll(getCharmEffects(stack));
         }
         return charms;
     }
@@ -142,27 +136,30 @@ public class CharmModule extends Module {
      * @param stack the stack.
      * @return the charms.
      */
-    public List<Charm> getCharms(ItemStack stack) {
-        if (stack == null)
-            return Collections.emptyList();
-
-        if (!this.typeToCharm.containsKey(stack.getType()))
+    public List<CharmEffect> getCharmEffects(ItemStack stack) {
+        if (ItemUtil.isAirOrNull(stack) || !stack.hasItemMeta())
             return Collections.emptyList();
 
         ReadableNBT nbt = NBT.readNbt(stack);
-        if (!nbt.hasTag(CHARM_ITEM_KEY, NBTType.NBTTagCompound))
-            return Collections.emptyList();
+        List<CharmEffect> charmEffects = new ArrayList<>();
+        if (nbt.hasTag(CHARM_ITEM_KEY, NBTType.NBTTagCompound)) {
+            ReadableNBT compound = nbt.getCompound(CHARM_ITEM_KEY);
+            for (String str : compound.getKeys()) {
+                if (!this.charms.containsKey(str)) // Filter dead IDs
+                    continue;
 
-        ReadableNBT compound = nbt.getCompound(CHARM_ITEM_KEY);
-        List<Charm> charms = new ArrayList<>();
-        for (String str : compound.getKeys()) {
-            if (!this.charms.containsKey(str)) // Filter dead IDs
-                continue;
-
-            charms.add(this.charms.get(str));
+                charmEffects.addAll(this.charms.get(str).charmEffects());
+            }
+        } else if (nbt.hasTag(CHARM_EFFECT_LIST, NBTType.NBTTagList)) {
+            ReadableNBTList<String> effectList = nbt.getStringList(CHARM_EFFECT_LIST);
+            for (String str : effectList) {
+                if (this.charmEffects.containsKey(str)) {
+                    charmEffects.add(this.charmEffects.get(str));
+                }
+            }
         }
 
-        return charms;
+        return charmEffects;
     }
 
     /**
@@ -217,7 +214,7 @@ public class CharmModule extends Module {
 
         // Update the held charms of the player.
         addTask(() -> {
-            Set<Charm> allHeldCharms = getHeldCharms(player);
+            Set<CharmEffect> allHeldCharms = getHeldCharmEffects(player);
             updateHeldCharms(player, allHeldCharms);
         }).start();
     }
@@ -232,10 +229,8 @@ public class CharmModule extends Module {
             return;
 
         ItemStack cursor = event.getOldCursor();
-        for (Charm charm : getCharms(cursor)) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.markPlayerHeld(player);
-            }
+        for (CharmEffect effect : getCharmEffects(cursor)) {
+            effect.markPlayerHeld(player);
         }
     }
 
@@ -245,11 +240,8 @@ public class CharmModule extends Module {
                 !event.getInventorySlots().contains(event.getWhoClicked().getInventory().getHeldItemSlot()))
             return;
 
-        List<Charm> cursorCharms = getCharms(event.getOldCursor());
-        for (Charm charm : cursorCharms) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.markPlayerHeld(player);
-            }
+        for (CharmEffect effect : getCharmEffects(event.getOldCursor())) {
+            effect.markPlayerHeld(player);
         }
     }
 
@@ -273,72 +265,58 @@ public class CharmModule extends Module {
             return;
 
         ItemStack clickedWithItem = event.getItem();
-        for (Charm charm : getCharms(clickedWithItem)) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.onInteract(event.getPlayer());
-                effect.tryStartAbility(event.getPlayer());
-            }
+        for (CharmEffect effect : getCharmEffects(clickedWithItem)) {
+            effect.onInteract(event.getPlayer());
+            effect.tryStartAbility(event.getPlayer());
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInteractEntity(PlayerInteractEntityEvent event) {
-        for (Charm charm : getHeldCharms(event.getPlayer())) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.onPlayerInteract(event.getPlayer(), event.getRightClicked());
-            }
+        for (CharmEffect effect : getHeldCharmEffects(event.getPlayer())) {
+            effect.onPlayerInteract(event.getPlayer(), event.getRightClicked());
         }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        for (Charm charm : getHeldCharms(event.getPlayer())) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.playerQuit(event.getPlayer());
-            }
+        for (CharmEffect effect : getHeldCharmEffects(event.getPlayer())) {
+            effect.playerQuit(event.getPlayer());
         }
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        for (Charm charm : getHeldCharms(event.getPlayer())) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.markPlayerHeld(event.getPlayer());
-            }
+        for (CharmEffect effect : getHeldCharmEffects(event.getPlayer())) {
+            effect.markPlayerHeld(event.getPlayer());
         }
     }
 
     private void updateHeldCharms(Player player, ItemStack oldItem, ItemStack newItem) {
-        List<Charm> oldCharms = getCharms(oldItem);
-        for (Charm charm : oldCharms) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.stopPlayerHold(player);
-            }
+        List<CharmEffect> oldCharmEffects = getCharmEffects(oldItem);
+        for (CharmEffect effect : oldCharmEffects) {
+            effect.stopPlayerHold(player);
         }
 
-        List<Charm> newCharms = getCharms(newItem);
-        for (Charm charm : newCharms) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.markPlayerHeld(player);
-            }
+        List<CharmEffect> newCharms = getCharmEffects(newItem);
+        for (CharmEffect effect : newCharms) {
+            effect.markPlayerHeld(player);
         }
     }
 
-    private void updateHeldCharms(Player player, Set<Charm> heldCharmEffects) {
+    private void updateHeldCharms(Player player, Set<CharmEffect> heldCharmEffects) {
         // Remove all old effects.
         for (Charm charm : this.charms.values()) {
-            if (heldCharmEffects.contains(charm))
-                continue;
-
             for (CharmEffect effect : charm.charmEffects()) {
+                if (heldCharmEffects.contains(effect))
+                    continue;
+
                 effect.stopPlayerHold(player);
             }
         }
 
-        for (Charm charm : heldCharmEffects) {
-            for (CharmEffect effect : charm.charmEffects()) {
-                effect.markPlayerHeld(player);
-            }
+        for (CharmEffect effect : heldCharmEffects) {
+            effect.markPlayerHeld(player);
         }
     }
 }

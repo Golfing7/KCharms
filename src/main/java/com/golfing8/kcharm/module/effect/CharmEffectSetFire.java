@@ -1,15 +1,9 @@
 package com.golfing8.kcharm.module.effect;
 
 import com.golfing8.kcommon.NMS;
-import com.golfing8.kcommon.config.ConfigTypeRegistry;
-import com.golfing8.kcommon.config.adapter.ConfigPrimitive;
 import com.google.common.base.Preconditions;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffect;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Sets players on fire.
@@ -17,8 +11,8 @@ import java.util.List;
 public class CharmEffectSetFire extends CharmEffect {
     private final int fireTicks;
 
-    public CharmEffectSetFire(ConfigurationSection section) {
-        super(section);
+    public CharmEffectSetFire(String id, ConfigurationSection section) {
+        super(id, section);
         Preconditions.checkArgument(section.isInt("fire-ticks"), "Must contain an int `fire-ticks`");
 
         this.fireTicks = section.getInt("fire-ticks", 200);
