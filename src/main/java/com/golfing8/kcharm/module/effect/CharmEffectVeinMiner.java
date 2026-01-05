@@ -5,6 +5,7 @@ import com.golfing8.kcommon.config.ConfigTypeRegistry;
 import com.golfing8.kcommon.struct.reflection.FieldType;
 import com.golfing8.shade.com.cryptomorin.xseries.XMaterial;
 import com.google.gson.reflect.TypeToken;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -52,6 +53,9 @@ public class CharmEffectVeinMiner extends CharmEffect {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
+        if (event.getPlayer().getGameMode() == GameMode.CREATIVE)
+            return;
+
         if (silenceEvent) {
             capturedXp += event.getExpToDrop();
             event.setExpToDrop(0);
@@ -96,19 +100,21 @@ public class CharmEffectVeinMiner extends CharmEffect {
         blocksToHandle.add(origin);
         while (!blocksToHandle.isEmpty()) {
             Block block = blocksToHandle.poll();
-            for (BlockFace face : BlockFace.values()) {
-                if (blocks.size() >= maxBlocks)
-                    return blocks;
+            for (int y = -1; y <= 1; y++) {
+                for (BlockFace face : BlockFace.values()) {
+                    if (blocks.size() >= maxBlocks)
+                        return blocks;
 
-                if (face == BlockFace.SELF)
-                    continue;
+                    if (face == BlockFace.UP || face == BlockFace.DOWN || (face == BlockFace.SELF && y == 0))
+                        continue;
 
-                Block other = block.getRelative(face);
-                if (blocks.contains(other) || XMaterial.matchXMaterial(other.getType()) != matchType)
-                    continue;
+                    Block other = block.getRelative(face.getModX(), y, face.getModZ());
+                    if (blocks.contains(other) || XMaterial.matchXMaterial(other.getType()) != matchType)
+                        continue;
 
-                blocks.add(other);
-                blocksToHandle.add(other);
+                    blocks.add(other);
+                    blocksToHandle.add(other);
+                }
             }
         }
         return blocks;
