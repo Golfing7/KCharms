@@ -4,6 +4,7 @@ import com.golfing8.kcommon.config.ConfigEntry;
 import com.golfing8.kcommon.config.ConfigTypeRegistry;
 import com.golfing8.kcommon.struct.reflection.FieldType;
 import com.golfing8.shade.com.cryptomorin.xseries.XMaterial;
+import com.google.common.collect.Sets;
 import com.google.gson.reflect.TypeToken;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -18,12 +19,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A charm effect for allowing vein miner for block types.
@@ -31,12 +27,36 @@ import java.util.Set;
 public class CharmEffectVeinMiner extends CharmEffect {
     private final int maxBlocks;
     private final Set<XMaterial> blockWhitelist;
+    private final Map<XMaterial, Set<XMaterial>> blockCategoryWhitelist;
 
     public CharmEffectVeinMiner(String id, ConfigurationSection section) {
         super(id, section);
 
         this.blockWhitelist = ConfigTypeRegistry.getFromType(new ConfigEntry(section, "block-whitelist"), FieldType.extractFrom(new TypeToken<Set<XMaterial>>() {}));
+        if (section.contains("block-category-whitelist")) {
+            this.blockCategoryWhitelist = ConfigTypeRegistry.getFromType(new ConfigEntry(section, "block-category-whitelist"), FieldType.extractFrom(
+                    new TypeToken<Map<XMaterial, Set<XMaterial>>>() {}
+            ));
+        } else {
+            this.blockCategoryWhitelist = Collections.emptyMap();
+        }
         this.maxBlocks = section.getInt("max-blocks", 20);
+    }
+
+    /**
+     * Gets the vein mine materials
+     *
+     * @return the vein mine materials
+     */
+    private Set<XMaterial> getVeinMineMaterials(XMaterial breaking) {
+        if (this.blockWhitelist.contains(breaking)) {
+            return Collections.singleton(breaking);
+        } else if (this.blockCategoryWhitelist.containsKey(breaking)) {
+            Set<XMaterial> whitelisted = this.blockCategoryWhitelist.get(breaking);
+            return Sets.union(whitelisted, Collections.singleton(breaking));
+        } else {
+            return Collections.emptySet();
+        }
     }
 
     /** If the event is currently silenced */
@@ -64,13 +84,14 @@ public class CharmEffectVeinMiner extends CharmEffect {
 
         Block origin = event.getBlock();
         XMaterial type = XMaterial.matchXMaterial(origin.getType());
-        if (!blockWhitelist.contains(type))
+        Set<XMaterial> materials = getVeinMineMaterials(type);
+        if (materials.isEmpty())
             return;
 
         if (!isAffectedByCharm(event.getPlayer()))
             return;
 
-        Set<Block> blocks = collectBlocksInVein(type, origin);
+        Set<Block> blocks = collectBlocksInVein(materials, origin);
         try {
             silenceEvent = true;
             capturedXp = 0;
@@ -94,7 +115,7 @@ public class CharmEffectVeinMiner extends CharmEffect {
         }
     }
 
-    private Set<Block> collectBlocksInVein(XMaterial matchType, Block origin) {
+    private Set<Block> collectBlocksInVein(Set<XMaterial> matchTypes, Block origin) {
         Set<Block> blocks = new HashSet<>();
         Queue<Block> blocksToHandle = new ArrayDeque<>();
         blocksToHandle.add(origin);
@@ -109,7 +130,7 @@ public class CharmEffectVeinMiner extends CharmEffect {
                         continue;
 
                     Block other = block.getRelative(face.getModX(), y, face.getModZ());
-                    if (blocks.contains(other) || XMaterial.matchXMaterial(other.getType()) != matchType)
+                    if (blocks.contains(other) || !matchTypes.contains(XMaterial.matchXMaterial(other.getType())))
                         continue;
 
                     blocks.add(other);

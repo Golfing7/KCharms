@@ -41,7 +41,7 @@ dependencies {
     }
 }
 
-val deployDirectory = "/home/andrew/Servers/Server-1.21.4/plugins"
+val deployDirectory = "/home/andrew/Servers/Server-1.21.11/plugins"
 tasks.create("deploy") {
     dependsOn(tasks.build)
 
