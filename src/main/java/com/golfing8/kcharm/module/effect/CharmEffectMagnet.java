@@ -3,6 +3,7 @@ package com.golfing8.kcharm.module.effect;
 import com.golfing8.kcommon.util.PlayerUtil;
 import com.golfing8.kcommon.util.SetExpFix;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -40,13 +41,19 @@ public class CharmEffectMagnet extends CharmEffect {
         if (!magnetBlockDrops)
             return;
 
-        PlayerUtil.givePlayerItemsSafe(event.getPlayer(), event.getItems().stream().map(Item::getItemStack).toList());
+        if (!isAffectedByCharm(event.getPlayer()))
+            return;
+
+        PlayerUtil.givePlayerItemsSafe(event.getPlayer(), event.getItems().stream().filter(Entity::isValid).map(Item::getItemStack).toList());
         event.getItems().clear();
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockXp(BlockBreakEvent event) {
         if (!magnetBlockXp)
+            return;
+
+        if (!isAffectedByCharm(event.getPlayer()))
             return;
 
         int currentXp = SetExpFix.getTotalExperience(event.getPlayer());
@@ -59,6 +66,9 @@ public class CharmEffectMagnet extends CharmEffect {
         boolean player = event.getEntity() instanceof Player;
         Player killer = event.getEntity().getKiller();
         if (killer == null)
+            return;
+
+        if (!isAffectedByCharm(killer))
             return;
 
         if (player && magnetPlayerDrops || !player && magnetMobDrops) {
