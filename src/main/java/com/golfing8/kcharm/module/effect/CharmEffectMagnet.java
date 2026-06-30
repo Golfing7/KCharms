@@ -44,7 +44,7 @@ public class CharmEffectMagnet extends CharmEffect {
         if (!isAffectedByCharm(event.getPlayer()))
             return;
 
-        PlayerUtil.givePlayerItemsSafe(event.getPlayer(), event.getItems().stream().filter(Entity::isValid).map(Item::getItemStack).toList());
+        PlayerUtil.givePlayerItemsSafe(event.getPlayer(), event.getItems().stream().filter(entity -> !entity.isDead()).map(Item::getItemStack).toList());
         event.getItems().clear();
     }
 
