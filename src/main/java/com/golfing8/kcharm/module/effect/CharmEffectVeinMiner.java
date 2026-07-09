@@ -68,6 +68,7 @@ public class CharmEffectVeinMiner extends CharmEffect {
     public void onBlockDrop(BlockDropItemEvent event) {
         if (silenceEvent && capturedDrops != null) {
             capturedDrops.addAll(event.getItems());
+            event.getItems().clear();
         }
     }
 
