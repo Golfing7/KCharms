@@ -64,7 +64,7 @@ public class CharmEffectVeinMiner extends CharmEffect {
     private transient @Nullable List<Item> capturedDrops;
     private transient int capturedXp;
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockDrop(BlockDropItemEvent event) {
         if (silenceEvent && capturedDrops != null) {
             capturedDrops.addAll(event.getItems());

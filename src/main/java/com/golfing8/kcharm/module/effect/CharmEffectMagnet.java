@@ -36,7 +36,7 @@ public class CharmEffectMagnet extends CharmEffect {
         this.magnetPlayerXp = section.getBoolean("player-xp", true);
     }
 
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockDrop(BlockDropItemEvent event) {
         if (!magnetBlockDrops)
             return;
@@ -48,7 +48,7 @@ public class CharmEffectMagnet extends CharmEffect {
         event.getItems().clear();
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockXp(BlockBreakEvent event) {
         if (!magnetBlockXp)
             return;
@@ -61,7 +61,7 @@ public class CharmEffectMagnet extends CharmEffect {
         event.setExpToDrop(0);
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onMobDropAndXp(EntityDeathEvent event) {
         boolean player = event.getEntity() instanceof Player;
         Player killer = event.getEntity().getKiller();
