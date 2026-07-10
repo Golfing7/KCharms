@@ -107,7 +107,9 @@ public class CharmEffectVeinMiner extends CharmEffect {
             for (Item item : capturedDrops) {
                 item.teleport(dropLocation);
             }
-            event.getPlayer().getWorld().spawn(dropLocation, ExperienceOrb.class, orb -> orb.setExperience(capturedXp));
+            if (capturedXp > 0) {
+                event.getPlayer().getWorld().spawn(dropLocation, ExperienceOrb.class, orb -> orb.setExperience(capturedXp));
+            }
         } finally {
             silenceEvent = false;
             capturedXp = 0;

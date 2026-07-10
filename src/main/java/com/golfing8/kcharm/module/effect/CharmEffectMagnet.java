@@ -56,9 +56,11 @@ public class CharmEffectMagnet extends CharmEffect {
         if (!isAffectedByCharm(event.getPlayer()))
             return;
 
-        int currentXp = SetExpFix.getTotalExperience(event.getPlayer());
-        SetExpFix.setTotalExperience(event.getPlayer(), currentXp + event.getExpToDrop());
-        event.setExpToDrop(0);
+        if (event.getExpToDrop() > 0) {
+            int currentXp = SetExpFix.getTotalExperience(event.getPlayer());
+            SetExpFix.setTotalExperience(event.getPlayer(), currentXp + event.getExpToDrop());
+            event.setExpToDrop(0);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -77,9 +79,11 @@ public class CharmEffectMagnet extends CharmEffect {
         }
 
         if (player && magnetPlayerXp || !player && magnetMobXp) {
-            int currentXp = SetExpFix.getTotalExperience(killer);
-            SetExpFix.setTotalExperience(killer, currentXp + event.getDroppedExp());
-            event.setDroppedExp(0);
+            if (event.getDroppedExp() > 0) {
+                int currentXp = SetExpFix.getTotalExperience(killer);
+                SetExpFix.setTotalExperience(killer, currentXp + event.getDroppedExp());
+                event.setDroppedExp(0);
+            }
         }
     }
 }
