@@ -8,6 +8,7 @@ import com.golfing8.kcharm.module.condition.CharmCondition;
 import com.golfing8.kcharm.module.condition.CharmConditionType;
 import com.golfing8.kcharm.module.condition.ConditionContext;
 import com.golfing8.kcharm.module.effect.selection.CharmEffectSelection;
+import com.golfing8.kcharm.module.task.MessageTask;
 import com.golfing8.kcommon.NMS;
 import com.golfing8.kcommon.config.lang.Message;
 import com.golfing8.kcommon.struct.map.CooldownMap;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 public abstract class CharmEffect implements Listener {
     private static final NumberFormat DURATION_FORMAT = new DecimalFormat("###.#");
 
+    private final CharmModule module = CharmModule.get();
     /** The internal identifier of this charm effect */
     private final String id;
     /** All players who are currently holding this charm mapped to the tick they started holding it. */
@@ -65,6 +67,8 @@ public abstract class CharmEffect implements Listener {
     private boolean requireVulnerable;
     /** Sent to the user of a charm while they're holding. */
     private Message holdingMsg;
+    /** The message sent when an effect is active */
+    private Message effectActiveMsg;
     /** Sent to the user of a charm when it's activated */
     private Message useMsg;
     /** Sent to holders when they're on cooldown, useful for action bars */
@@ -75,8 +79,7 @@ public abstract class CharmEffect implements Listener {
     public CharmEffect(String id, ConfigurationSection section) {
         this.id = id;
 
-        CharmModule module = CharmModule.get();
-        module.addTask(this::tickAffectedPlayers).runTaskTimer(module.getPlugin(), 0, 20);
+        module.addTask(() -> tickAffectedPlayers(true)).runTaskTimer(module.getPlugin(), 0, 2);
         module.addTask(this::tickCooldown).runTaskTimer(module.getPlugin(), 0, 2);
 
         if (section.isConfigurationSection("ranged")) {
@@ -105,6 +108,7 @@ public abstract class CharmEffect implements Listener {
         };
 
         this.holdingMsg = new Message(section.get("holding-message"));
+        this.effectActiveMsg = new Message(section.get("effect-active-message"));
         this.requireVulnerable = section.getBoolean("require-vulnerable", false);
 
         if (section.isConfigurationSection("active")) {
@@ -161,7 +165,7 @@ public abstract class CharmEffect implements Listener {
 
         for (Player player : holdingPlayers.keySet()) {
             if (!cooldownMap.isOnCooldown(player.getUniqueId())) {
-                offCooldownMsg.send(player);
+                module.getMessenger().queue(offCooldownMsg, player);
                 if (!this.charmAnimations.isEmpty()) {
                     var nearbyPlayers = getAffectedPlayers(player);
                     for (CharmAnimation animation : this.charmAnimations) {
@@ -174,9 +178,11 @@ public abstract class CharmEffect implements Listener {
             long cooldownLengthMS = cooldownLengthTicks;
             long currentCooldown = cooldownMap.getCooldownRemaining(player.getUniqueId()) / 50L;
             if (this.cooldownMsg != null && !isEffectActive(player)) {
-                cooldownMsg.send(player,
+                Message parsedCooldown = cooldownMsg.cloneAndParse(
                         "PROGRESS_BAR", ProgressBar.getProgressBar(cooldownLengthMS - currentCooldown, cooldownLengthMS, ProgressBar.BOX_UNICODE, 10),
-                        "TIME_LEFT", StringUtil.timeFormatted((int) (currentCooldown / 20), true));
+                        "TIME_LEFT", StringUtil.timeFormatted((int) (currentCooldown / 20), true)
+                );
+                module.getMessenger().queue(parsedCooldown, player);
             }
         }
     }
@@ -184,11 +190,12 @@ public abstract class CharmEffect implements Listener {
     /**
      * Ticks and updated affected players.
      */
-    private void tickAffectedPlayers() {
+    private void tickAffectedPlayers(boolean message) {
         Set<Player> newAffectedPlayers = new HashSet<>();
         for (var entry : holdingPlayers.entrySet()) {
             // Send the message to the player.
-            holdingMsg.send(entry.getKey());
+            if (message)
+                module.getMessenger().queue(holdingMsg, entry.getKey());
             if (!isEffectActive(entry.getKey())) {
                 continue;
             }
@@ -204,9 +211,10 @@ public abstract class CharmEffect implements Listener {
             newAffectedPlayers.addAll(inRange);
         }
 
-
         // Loop through all the new players and try to either start affecting them, or stop affecting them.
         for (Player player : newAffectedPlayers) {
+            if (message)
+                module.getMessenger().queue(effectActiveMsg, player);
             if (!this.affectedPlayers.contains(player)) {
                 this.startEffect(player);
             } else {
@@ -248,14 +256,14 @@ public abstract class CharmEffect implements Listener {
     public final void markPlayerHeld(Player player) {
         this.holdingPlayers.put(player, Bukkit.getCurrentTick());
         this.onStartHolding(player);
-        this.tickAffectedPlayers();
+        this.tickAffectedPlayers(false);
     }
 
     public final void stopPlayerHold(Player player) {
         // The order is important as we want isHoldingCharm to be true for when a player stops holding the charm.
         this.onStopHolding(player);
         this.holdingPlayers.remove(player);
-        this.tickAffectedPlayers();
+        this.tickAffectedPlayers(false);
     }
 
     /**
@@ -293,8 +301,8 @@ public abstract class CharmEffect implements Listener {
                 animation.onActivate(activator, nearbyPlayers);
             }
         }
-        this.tickAffectedPlayers();
-        this.useMsg.send(activator);
+        this.tickAffectedPlayers(false);
+        module.getMessenger().queue(useMsg, activator);
         return true;
     }
 

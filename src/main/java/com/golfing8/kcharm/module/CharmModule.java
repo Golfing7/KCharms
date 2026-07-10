@@ -5,6 +5,7 @@ import com.golfing8.kcharm.module.effect.CharmEffect;
 import com.golfing8.kcharm.module.effect.CharmEffectType;
 import com.golfing8.kcharm.module.effect.selection.CharmEffectSelectionManager;
 import com.golfing8.kcharm.module.struct.Charm;
+import com.golfing8.kcharm.module.task.MessageTask;
 import com.golfing8.kcommon.config.commented.Configuration;
 import com.golfing8.kcommon.config.generator.Conf;
 import com.golfing8.kcommon.module.Module;
@@ -69,6 +70,9 @@ public class CharmModule extends Module {
     /** Used to prevent players from accidentally activating abilities */
     private CooldownMap<UUID> cantActivateAbilities;
 
+    @Getter
+    private MessageTask messenger;
+
     @Override
     public void onEnable() {
         this.charms = new HashMap<>();
@@ -107,6 +111,7 @@ public class CharmModule extends Module {
                 }
             }
         }).startTimer(0, 20);
+        addTask(messenger = new MessageTask(this)).startTimer(0, 1);
     }
 
     @Override
