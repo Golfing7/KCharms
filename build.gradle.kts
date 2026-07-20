@@ -11,7 +11,11 @@ version = "1.0"
 
 repositories {
     mavenCentral()
-    mavenLocal()
+
+    maven {
+        name = "koredevReleasesSnapshots"
+        url = uri("https://maven.mckore.com/snapshots")
+    }
 
     maven("https://repo.papermc.io/repository/maven-public/")
     maven {
@@ -31,7 +35,7 @@ dependencies {
 
     compileOnly("org.projectlombok:lombok:1.18.36")
     compileOnly("io.papermc.paper:paper-api:1.21.5-R0.1-SNAPSHOT")
-    compileOnly(group = "com.golfing8", name = "KCommon", version = "1.1").isChanging = true
+    compileOnly(group = "com.golfing8", name = "KCommon", version = "1.2-SNAPSHOT")
 
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.4") {
         exclude("org.spigotmc")
