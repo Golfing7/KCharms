@@ -11,6 +11,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 
@@ -65,7 +67,9 @@ public class CharmEffectMagnet extends CharmEffect {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onMobDropAndXp(EntityDeathEvent event) {
-        boolean player = event.getEntity() instanceof Player;
+        if (event.getEntity() instanceof Player)
+            return;
+
         Player killer = event.getEntity().getKiller();
         if (killer == null)
             return;
@@ -73,17 +77,40 @@ public class CharmEffectMagnet extends CharmEffect {
         if (!isAffectedByCharm(killer))
             return;
 
-        if (player && magnetPlayerDrops || !player && magnetMobDrops) {
+        if (magnetMobDrops) {
             PlayerUtil.givePlayerItemsSafe(killer, event.getDrops());
             event.getDrops().clear();
         }
 
-        if (player && magnetPlayerXp || !player && magnetMobXp) {
+        if (magnetMobXp) {
             if (event.getDroppedExp() > 0) {
                 int currentXp = SetExpFix.getTotalExperience(killer);
                 SetExpFix.setTotalExperience(killer, currentXp + event.getDroppedExp());
                 event.setDroppedExp(0);
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player killer = event.getEntity().getKiller();
+        if (killer == null)
+            return;
+
+        if (!isAffectedByCharm(killer))
+            return;
+
+        if (magnetPlayerDrops && !event.getKeepInventory()) {
+            List<ItemStack> list = new ArrayList<>(event.getDrops().stream()
+                    .filter(item -> !event.getItemsToKeep().contains(item)).toList());
+            PlayerUtil.givePlayerItemsSafe(killer, list);
+            event.getDrops().removeAll(list);
+        }
+
+        if (magnetPlayerXp && event.getDroppedExp() > 0 && !event.getKeepLevel()) {
+            int currentXp = SetExpFix.getTotalExperience(killer);
+            SetExpFix.setTotalExperience(killer, currentXp + event.getDroppedExp());
+            event.setDroppedExp(0);
         }
     }
 }
