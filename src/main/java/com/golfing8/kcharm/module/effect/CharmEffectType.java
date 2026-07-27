@@ -19,6 +19,7 @@ public enum CharmEffectType {
     SET_FIRE(CharmEffectSetFire::new),
     VEIN_MINER(CharmEffectVeinMiner::new),
     MAGNET(CharmEffectMagnet::new),
+    SHOCKWAVE(CharmEffectShockWave::new),
     ;
 
     /** Maps a config section to a loaded instance of a charm effect */
