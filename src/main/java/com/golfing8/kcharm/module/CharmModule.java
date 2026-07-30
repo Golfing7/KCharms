@@ -40,6 +40,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -80,15 +81,23 @@ public class CharmModule extends Module {
         this.charmEffectSelectionManager = new CharmEffectSelectionManager();
         this.cantActivateAbilities = new CooldownMap<>();
         for (Configuration configuration : loadConfigGroup("effects")) {
-            CharmEffect effect = CharmEffectType.fromConfig(configuration.getFileNameNoExtension(), configuration);
-            addSubListener(effect);
-            this.charmEffects.put(configuration.getFileNameNoExtension(), effect);
+            try {
+                CharmEffect effect = CharmEffectType.fromConfig(configuration.getFileNameNoExtension(), configuration);
+                addSubListener(effect);
+                this.charmEffects.put(configuration.getFileNameNoExtension(), effect);
+            } catch (Exception exc) {
+                getLogger().log(Level.SEVERE, "Failed to load effect " + configuration.getFileNameNoExtension(), exc);
+            }
         }
 
         ConfigurationSection charmSection = getMainConfig().getConfigurationSection("charms");
         for (String charmID : charmSection.getKeys(false)) {
-            Charm charm = Charm.fromConfig(charmSection.getConfigurationSection(charmID));
-            this.charms.put(charmID, charm);
+            try {
+                Charm charm = Charm.fromConfig(charmSection.getConfigurationSection(charmID));
+                this.charms.put(charmID, charm);
+            } catch (Exception exc) {
+                getLogger().log(Level.SEVERE, "Failed to load charm " + charmID, exc);
+            }
         }
 
         this.addCommand(new CharmCommand());
