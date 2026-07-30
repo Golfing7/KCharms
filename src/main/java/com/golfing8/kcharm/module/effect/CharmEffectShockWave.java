@@ -86,6 +86,9 @@ public class CharmEffectShockWave extends CharmEffect {
                             continue;
 
                         Block relative = event.getBlock().getRelative(mx, my, mz);
+                        if (relative.getType().getHardness() < 0)
+                            continue;
+
                         if (isMaterialAllowed(XMaterial.matchXMaterial(relative.getType()))) {
                             event.getPlayer().breakBlock(relative);
                         }
