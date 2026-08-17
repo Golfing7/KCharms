@@ -1,5 +1,6 @@
 package com.golfing8.kcharm.module.effect;
 
+import com.golfing8.kcharm.module.effect.event.MagnetDropsEvent;
 import com.golfing8.kcommon.util.PlayerUtil;
 import com.golfing8.kcommon.util.SetExpFix;
 import org.bukkit.configuration.ConfigurationSection;
@@ -13,6 +14,7 @@ import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -46,8 +48,12 @@ public class CharmEffectMagnet extends CharmEffect {
         if (!isAffectedByCharm(event.getPlayer()))
             return;
 
-        PlayerUtil.givePlayerItemsSafe(event.getPlayer(), event.getItems().stream().map(Item::getItemStack).toList());
-        event.getItems().clear();
+        List<ItemStack> dropList = new ArrayList<>(event.getItems().stream().map(Item::getItemStack).toList());
+        MagnetDropsEvent dropsEvent = new MagnetDropsEvent(event.getPlayer(), this, dropList, 0);
+        if (dropsEvent.callEvent()) {
+            PlayerUtil.givePlayerItemsSafe(event.getPlayer(), dropList);
+            event.getItems().clear();
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -59,8 +65,12 @@ public class CharmEffectMagnet extends CharmEffect {
             return;
 
         if (event.getExpToDrop() > 0) {
+            MagnetDropsEvent dropsEvent = new MagnetDropsEvent(event.getPlayer(), this, Collections.emptyList(), event.getExpToDrop());
+            if (!dropsEvent.callEvent())
+                return;
+
             int currentXp = SetExpFix.getTotalExperience(event.getPlayer());
-            SetExpFix.setTotalExperience(event.getPlayer(), currentXp + event.getExpToDrop());
+            SetExpFix.setTotalExperience(event.getPlayer(), currentXp + dropsEvent.getXp());
             event.setExpToDrop(0);
         }
     }
@@ -78,14 +88,22 @@ public class CharmEffectMagnet extends CharmEffect {
             return;
 
         if (magnetMobDrops) {
-            PlayerUtil.givePlayerItemsSafe(killer, event.getDrops());
-            event.getDrops().clear();
+            MagnetDropsEvent dropsEvent = new MagnetDropsEvent(killer, this, event.getDrops(), 0);
+            if (dropsEvent.callEvent()) {
+                PlayerUtil.givePlayerItemsSafe(killer, dropsEvent.getItemStacks());
+                event.getDrops().clear();
+            }
+
         }
 
         if (magnetMobXp) {
             if (event.getDroppedExp() > 0) {
+                MagnetDropsEvent dropsEvent = new MagnetDropsEvent(killer, this, Collections.emptyList(), event.getDroppedExp());
+                if (!dropsEvent.callEvent())
+                    return;
+
                 int currentXp = SetExpFix.getTotalExperience(killer);
-                SetExpFix.setTotalExperience(killer, currentXp + event.getDroppedExp());
+                SetExpFix.setTotalExperience(killer, currentXp + dropsEvent.getXp());
                 event.setDroppedExp(0);
             }
         }
@@ -103,13 +121,20 @@ public class CharmEffectMagnet extends CharmEffect {
         if (magnetPlayerDrops && !event.getKeepInventory()) {
             List<ItemStack> list = new ArrayList<>(event.getDrops().stream()
                     .filter(item -> !event.getItemsToKeep().contains(item)).toList());
-            PlayerUtil.givePlayerItemsSafe(killer, list);
-            event.getDrops().removeAll(list);
+            MagnetDropsEvent dropsEvent = new MagnetDropsEvent(killer, this, list, 0);
+            if (dropsEvent.callEvent()) {
+                PlayerUtil.givePlayerItemsSafe(killer, list);
+                event.getDrops().removeAll(list);
+            }
         }
 
         if (magnetPlayerXp && event.getDroppedExp() > 0 && !event.getKeepLevel()) {
+            MagnetDropsEvent dropsEvent = new MagnetDropsEvent(killer, this, Collections.emptyList(), event.getDroppedExp());
+            if (!dropsEvent.callEvent())
+                return;
+
             int currentXp = SetExpFix.getTotalExperience(killer);
-            SetExpFix.setTotalExperience(killer, currentXp + event.getDroppedExp());
+            SetExpFix.setTotalExperience(killer, currentXp + dropsEvent.getXp());
             event.setDroppedExp(0);
         }
     }
