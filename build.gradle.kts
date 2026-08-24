@@ -21,6 +21,7 @@ repositories {
     maven {
         url = uri("https://maven.enginehub.org/repo/")
     }
+    maven("https://repo.codemc.io/repository/maven-public/")
 }
 
 java {
@@ -36,6 +37,7 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.36")
     compileOnly("io.papermc.paper:paper-api:1.21.5-R0.1-SNAPSHOT")
     compileOnly(group = "com.golfing8", name = "KCommon", version = "1.3-SNAPSHOT")
+    compileOnly("com.github.retrooper:packetevents-spigot:2.13.0")
 
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.4") {
         exclude("org.spigotmc")

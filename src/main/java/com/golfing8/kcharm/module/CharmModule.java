@@ -1,5 +1,8 @@
 package com.golfing8.kcharm.module;
 
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerCommon;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.golfing8.kcharm.module.cmd.CharmCommand;
 import com.golfing8.kcharm.module.effect.CharmEffect;
 import com.golfing8.kcharm.module.effect.CharmEffectType;
@@ -58,6 +61,9 @@ public class CharmModule extends Module {
     @Getter
     @Conf("Allow main hand charms")
     private boolean allowMainHandCharms = false;
+    @Getter
+    @Conf("The amount of time (in ticks) to wait to send the action bar again after a foreign one is detected")
+    private int actionBarForeignCooldown = 60;
     /** All loaded charms */
     @Getter
     private Map<String, Charm> charms;
@@ -73,6 +79,7 @@ public class CharmModule extends Module {
 
     @Getter
     private MessageTask messenger;
+    private PacketListenerCommon commonListener;
 
     @Override
     public void onEnable() {
@@ -121,12 +128,16 @@ public class CharmModule extends Module {
             }
         }).startTimer(0, 20);
         addTask(messenger = new MessageTask(this)).startTimer(0, 1);
+        commonListener = PacketEvents.getAPI().getEventManager().registerListener(messenger, PacketListenerPriority.NORMAL);
     }
 
     @Override
     public void onDisable() {
         for (CharmEffect effect : this.charmEffects.values()) {
             effect.shutdown();
+        }
+        if (commonListener != null) {
+            PacketEvents.getAPI().getEventManager().unregisterListener(commonListener);
         }
     }
 
