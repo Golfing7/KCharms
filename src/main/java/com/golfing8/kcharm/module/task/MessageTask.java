@@ -3,22 +3,28 @@ package com.golfing8.kcharm.module.task;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerActionBar;
 import com.golfing8.kcharm.module.CharmModule;
 import com.golfing8.kcommon.NMS;
 import com.golfing8.kcommon.config.lang.Message;
 import com.golfing8.kcommon.module.ModuleTask;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
- * Helps messages be delivered in a pretty way to players holding multiple charm effects
+ * Helps messages be delivered in a pretty way to players holding multiple charm effects.
+ * <p>
+ * PacketEvents fires {@link #onPacketSend(PacketSendEvent)} on the Netty I/O thread while
+ * {@link #run()} and {@link #queue(Message, Player)} run on the main thread, so every read/write
+ * of a {@link MessageHolder}'s fields (and the backing map) is synchronized to avoid the foreign-packet
+ * detection racing/going stale across threads.
  */
 public class MessageTask extends ModuleTask<CharmModule> implements PacketListener {
-    private final WeakHashMap<Player, MessageHolder> messageHolderMap = new WeakHashMap<>();
+    private final Map<Player, MessageHolder> messageHolderMap = new WeakHashMap<>();
 
     public MessageTask(CharmModule module) {
         super(module);
@@ -27,18 +33,31 @@ public class MessageTask extends ModuleTask<CharmModule> implements PacketListen
     @Override
     protected void run() {
         long currentTick = NMS.getTheNMS().getCurrentTick();
-        for (var entry : messageHolderMap.entrySet()) {
+        List<Map.Entry<Player, MessageHolder>> entries;
+        synchronized (messageHolderMap) {
+            entries = new ArrayList<>(messageHolderMap.entrySet());
+        }
+
+        for (var entry : entries) {
             Player player = entry.getKey();
             MessageHolder messageHolder = entry.getValue();
-            if (messageHolder.message == null || messageHolder.message.isEmpty())
-                continue;
+            Message toSend = null;
+            synchronized (messageHolder) {
+                if (messageHolder.message == null || messageHolder.message.isEmpty())
+                    continue;
 
-            messageHolder.pendingRealSend = true;
-            if (currentTick - messageHolder.lastForeignSentTick >= getModule().getActionBarForeignCooldown()) {
-                messageHolder.message.send(player);
+                if (currentTick - messageHolder.lastForeignSentTick >= getModule().getActionBarForeignCooldown()) {
+                    messageHolder.pendingRealSend = true;
+                    toSend = messageHolder.message;
+                }
+                messageHolder.message = null;
+                messageHolder.lastSentTick = currentTick;
             }
-            messageHolder.message = null;
-            messageHolder.lastSentTick = NMS.getTheNMS().getCurrentTick();
+
+            // Send outside the lock so we never hold it during packet dispatch.
+            if (toSend != null) {
+                toSend.send(player);
+            }
         }
     }
 
@@ -47,13 +66,20 @@ public class MessageTask extends ModuleTask<CharmModule> implements PacketListen
         if (event.getPacketType() != PacketType.Play.Server.ACTION_BAR)
             return;
 
+        Player player = event.getPlayer();
         long currentTick = NMS.getTheNMS().getCurrentTick();
-        MessageHolder messageHolder = messageHolderMap.computeIfAbsent(event.getPlayer(), k -> new MessageHolder());
-        if (messageHolder.pendingRealSend) {
-            messageHolder.pendingRealSend = false;
-            return;
+        MessageHolder messageHolder;
+        synchronized (messageHolderMap) {
+            messageHolder = messageHolderMap.computeIfAbsent(player, k -> new MessageHolder());
         }
-        messageHolder.lastForeignSentTick = currentTick;
+
+        synchronized (messageHolder) {
+            if (messageHolder.pendingRealSend) {
+                messageHolder.pendingRealSend = false;
+                return;
+            }
+            messageHolder.lastForeignSentTick = currentTick;
+        }
     }
 
     /**
@@ -66,11 +92,17 @@ public class MessageTask extends ModuleTask<CharmModule> implements PacketListen
         if (message.isEmpty())
             return;
 
-        MessageHolder messageHolder = messageHolderMap.computeIfAbsent(player, k -> new MessageHolder());
-        if (messageHolder.message != null) {
-            messageHolder.message = messageHolder.message.append(message, " &f&l|&r ");
-        } else {
-            messageHolder.message = message;
+        MessageHolder messageHolder;
+        synchronized (messageHolderMap) {
+            messageHolder = messageHolderMap.computeIfAbsent(player, k -> new MessageHolder());
+        }
+
+        synchronized (messageHolder) {
+            if (messageHolder.message != null) {
+                messageHolder.message = messageHolder.message.append(message, " &f&l|&r ");
+            } else {
+                messageHolder.message = message;
+            }
         }
     }
 
