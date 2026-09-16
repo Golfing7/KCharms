@@ -27,5 +27,7 @@ public class CharmCommand extends MCommand<CharmModule> {
     @Override
     protected void onRegister() {
         addSubCommand(new CharmGiveCommand());
+        addSubCommand(new DebugActionBarCommand());
+        addSubCommand(new ActionBarToggleCommand());
     }
 }

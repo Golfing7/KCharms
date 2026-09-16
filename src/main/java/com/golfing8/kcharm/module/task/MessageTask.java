@@ -92,6 +92,9 @@ public class MessageTask extends ModuleTask<CharmModule> implements PacketListen
         if (message.isEmpty())
             return;
 
+        if (!getModule().isActionBarEnabled(player))
+            return;
+
         MessageHolder messageHolder;
         synchronized (messageHolderMap) {
             messageHolder = messageHolderMap.computeIfAbsent(player, k -> new MessageHolder());

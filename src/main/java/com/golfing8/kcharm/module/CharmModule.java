@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerCommon;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.golfing8.kcharm.module.cmd.CharmCommand;
+import com.golfing8.kcharm.module.data.PlayerCharmSettings;
 import com.golfing8.kcharm.module.effect.CharmEffect;
 import com.golfing8.kcharm.module.effect.CharmEffectType;
 import com.golfing8.kcharm.module.effect.selection.CharmEffectSelectionManager;
@@ -11,6 +12,7 @@ import com.golfing8.kcharm.module.struct.Charm;
 import com.golfing8.kcharm.module.task.MessageTask;
 import com.golfing8.kcommon.config.commented.Configuration;
 import com.golfing8.kcommon.config.generator.Conf;
+import com.golfing8.kcommon.data.DataManagerContainer;
 import com.golfing8.kcommon.module.Module;
 import com.golfing8.kcommon.module.ModuleInfo;
 import com.golfing8.kcommon.struct.map.CooldownMap;
@@ -54,7 +56,7 @@ import java.util.stream.Collectors;
 @ModuleInfo(
         name = "charms"
 )
-public class CharmModule extends Module {
+public class CharmModule extends Module implements DataManagerContainer {
     public static final String CHARM_ITEM_KEY = "kcharm-type";
     public static final String CHARM_EFFECT_LIST = "kcharm-effects";
 
@@ -107,6 +109,8 @@ public class CharmModule extends Module {
             }
         }
 
+        this.addDataManager("charm-settings", PlayerCharmSettings.class);
+
         this.addCommand(new CharmCommand());
 
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -139,6 +143,26 @@ public class CharmModule extends Module {
         if (commonListener != null) {
             PacketEvents.getAPI().getEventManager().unregisterListener(commonListener);
         }
+    }
+
+    /**
+     * Gets the persisted charm settings for the given player.
+     *
+     * @param player the player.
+     * @return their settings.
+     */
+    public PlayerCharmSettings getSettings(Player player) {
+        return getOrCreate(player.getUniqueId(), PlayerCharmSettings.class);
+    }
+
+    /**
+     * Checks if the given player wants to receive action bar messages from charms.
+     *
+     * @param player the player.
+     * @return true if they should receive them.
+     */
+    public boolean isActionBarEnabled(Player player) {
+        return getSettings(player).isActionBarEnabled();
     }
 
     /**
